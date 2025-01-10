@@ -6,20 +6,21 @@ import torch.nn.functional as functional
 IMAGE_NONE = None
 inf = 1000000
 
-def image_prim(r, g, b):
-    return torch.stack((torch.full((1, 1, 1), r), torch.full((1, 1, 1), g), torch.full((1, 1, 1), b)), dim=-1)
+def image_prim(r, g, b, a=1.0):
+    return torch.stack((torch.full((1, 1, 1), r), torch.full((1, 1, 1), g), 
+                        torch.full((1, 1, 1), b), torch.full((1, 1, 1), a)), dim=-1)
 
 def is_image_prim(te):
-    return te.size() == (1, 1, 1, 3)
+    return te.size()[:-1] == (1, 1, 1)
 
 def interp(te, shape):
     if te.size() == shape:
         return te
     if is_image_prim(te):
-        r = torch.full(shape[:-1], te[0][0][0][0])
-        g = torch.full(shape[:-1], te[0][0][0][0])
-        b = torch.full(shape[:-1], te[0][0][0][0])
-        return torch.stack((r, g, b), dim=-1)
+        tostack = []
+        for i in range(shape[-1]):
+            tostack.append(torch.full(shape[:-1], te[0][0][0][i]))
+        return torch.stack(tostack, dim=-1)
 
     mode = 'bilinear'
     if te.size()[1] < shape[1] and te.size()[2] < shape[2]:
@@ -28,17 +29,17 @@ def interp(te, shape):
     return functional.interpolate(te, shape, mode=mode)
 
 def get_common_shape(*tensors):
-    biggest_size = (1, 1, 1, 3)
+    biggest_size = (1, 1)
     for t in tensors:
-        if (t.size()[1] * t.size()[2]) > (biggest_size[1] * biggest_size[2]):
-            biggest_size = t.size()
+        if (t.size()[1] * t.size()[2]) > (biggest_size[0] * biggest_size[1]):
+            biggest_size = t.size()[1:-1]
     return biggest_size
 
 def make_common_shape(*tensors):
     shape = get_common_shape(*tensors)
     res = []
     for t in tensors:
-        res.append(interp(t, shape))
+        res.append(interp(t, (t.size()[0], shape[0], shape[1], t.size()[3])))
     return res
 
 def col_to_float(tensor):
@@ -47,6 +48,14 @@ def col_to_float(tensor):
     stacked = torch.stack((avg, avg, avg))
     normal_order = stacked.permute(3, 1, 2, 0)
     return normal_order
+
+def split_rgba(tensor):
+    if tensor.size()[3] == 3:
+        return tensor, torch.full(list(tensor.size())[:-1] + [1], 1.0)
+    return tensor.split([3, 1], dim=-1)
+
+def join_rgba(rgb, a):
+    return torch.cat((rgb, a), dim=-1)
 
 COLMAX = 1.0 
 # Blender has soft min and max. 
@@ -114,9 +123,10 @@ class BlenderBrightnessContrast:
         if Contrast == IMAGE_NONE:
             Contrast = image_prim(ContrastF, ContrastF, ContrastF)
         
-        Color, Bright, Contrast = make_common_shape(Color, Bright, Contrast)
         Bright = col_to_float(Bright)
         Contrast = col_to_float(Contrast)
+        Color, Color_Alpha = split_rgba(Color)
+        Color, Color_Alpha, Bright, Contrast = make_common_shape(Color, Color_Alpha, Bright, Contrast)
 
         Color = torch.pow(Color, 2.2) # TODO: Blender uses sRGB by default. How should colorspace be handled?
 
@@ -125,7 +135,7 @@ class BlenderBrightnessContrast:
         
         res = torch.pow(res, 1/2.2)
 
-        return (res, )
+        return (join_rgba(res, Color_Alpha), )
     
 class BlenderGamma:
     def __init__(self):
@@ -152,10 +162,11 @@ class BlenderGamma:
         if Gamma == IMAGE_NONE:
             Gamma = image_prim(GammaF, GammaF, GammaF)
         Gamma = col_to_float(Gamma)
-        Color, Gamma = make_common_shape(Color, Gamma)
+        Color, Color_Alpha = split_rgba(Color)
+        Color, Color_Alpha, Gamma = make_common_shape(Color, Color_Alpha, Gamma)
 
         res = torch.pow(Color, Gamma).maximum(torch.zeros_like(Color))
-        return (res, )
+        return (join_rgba(res, Color_Alpha), )
 
 class BlenderInvertColor:
     def __init__(self):
@@ -182,8 +193,9 @@ class BlenderInvertColor:
         if Fac == IMAGE_NONE:
             Fac = image_prim(FacF, FacF, FacF)
         
-        Color, Fac = make_common_shape(Color, Fac)
         Fac = col_to_float(Fac)
+        Color, Color_Alpha = split_rgba(Color)
+        Color, Color_Alpha, Fac = make_common_shape(Color, Color_Alpha, Fac)
 
         Color = torch.pow(Color, 2.2) # TODO: Blender uses sRGB by default. How should colorspace be handled?
 
@@ -191,4 +203,4 @@ class BlenderInvertColor:
         res = ((1.0-Color)*Fac + Color*(1.0-Fac)).maximum(torch.zeros_like(Color))
         
         res = torch.pow(res, 1/2.2)
-        return (res, )
+        return (join_rgba(res, Color_Alpha), )
