@@ -1,79 +1,12 @@
 import torch
 import torch.nn.functional as functional
 
+from .nodes_base import *
+from .util import *
+
 # Image: batch, x, y, channels
 
-IMAGE_NONE = None
 inf = 1000000
-
-def image_prim(r, g, b, a=1.0):
-    return torch.stack((torch.full((1, 1, 1), r), torch.full((1, 1, 1), g), 
-                        torch.full((1, 1, 1), b), torch.full((1, 1, 1), a)), dim=-1)
-
-def is_image_prim(te):
-    return te.size()[:-1] == (1, 1, 1)
-
-def interp(te, shape):
-    if te.size() == shape:
-        return te
-    if is_image_prim(te):
-        tostack = []
-        for i in range(shape[-1]):
-            tostack.append(torch.full(shape[:-1], te[0][0][0][i]))
-        return torch.stack(tostack, dim=-1)
-
-    mode = 'bilinear'
-    if te.size()[1] < shape[1] and te.size()[2] < shape[2]:
-        mode = 'bicubic'
-    print(f"Interp: {mode}, {te.size()}, {shape}")
-    return functional.interpolate(te, shape, mode=mode)
-
-def get_common_shape(*tensors):
-    biggest_size = (1, 1)
-    for t in tensors:
-        if (t.size()[1] * t.size()[2]) > (biggest_size[0] * biggest_size[1]):
-            biggest_size = t.size()[1:-1]
-    return biggest_size
-
-def make_common_shape(*tensors):
-    shape = get_common_shape(*tensors)
-    res = []
-    for t in tensors:
-        res.append(interp(t, (t.size()[0], shape[0], shape[1], t.size()[3])))
-    return res
-
-def col_to_float(tensor):
-    channels_first = tensor.permute(3, 1, 2, 0)
-    avg = (channels_first[0] + channels_first[1] + channels_first[2]) / 3.0
-    stacked = torch.stack((avg, avg, avg))
-    normal_order = stacked.permute(3, 1, 2, 0)
-    return normal_order
-
-def split_rgba(tensor):
-    if tensor.size()[3] == 3:
-        return tensor, torch.full(list(tensor.size())[:-1] + [1], 1.0)
-    return tensor.split([3, 1], dim=-1)
-
-def join_rgba(rgb, a):
-    return torch.cat((rgb, a), dim=-1)
-
-COLMAX = 1.0 
-# Blender has soft min and max. 
-# All colors have a soft max of 1.0 can't be dragged further, but can be typed in higher. 
-# ComfyUI does not seem to have soft min/max?
-COLSTEP = 0.005
-
-INPUT_RGB_WHITE = {"ColorR": ("FLOAT", {"default": 1.0, "min": 0, "max": COLMAX, "step": COLSTEP}),
-                   "ColorG": ("FLOAT", {"default": 1.0, "min": 0, "max": COLMAX, "step": COLSTEP}),
-                   "ColorB": ("FLOAT", {"default": 1.0, "min": 0, "max": COLMAX, "step": COLSTEP}),}
-
-INPUT_RGB_WHITE08 = {"ColorR": ("FLOAT", {"default": 0.8, "min": 0, "max": COLMAX, "step": COLSTEP}),
-                     "ColorG": ("FLOAT", {"default": 0.8, "min": 0, "max": COLMAX, "step": COLSTEP}),
-                     "ColorB": ("FLOAT", {"default": 0.8, "min": 0, "max": COLMAX, "step": COLSTEP}),}
-
-INPUT_RGB_BLACK = {"ColorR": ("FLOAT", {"default": 0.0, "min": 0, "max": COLMAX, "step": COLSTEP}),
-                   "ColorG": ("FLOAT", {"default": 0.0, "min": 0, "max": COLMAX, "step": COLSTEP}),
-                   "ColorB": ("FLOAT", {"default": 0.0, "min": 0, "max": COLMAX, "step": COLSTEP}),}
 
 class BlenderValue:
     def __init__(self):
@@ -87,12 +20,51 @@ class BlenderValue:
             },
         }
     
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = (*BLENDER_OUTPUT(), "FLOAT", )
     FUNCTION = "get_value"
     CATEGORY = "Blender/Input" 
     
     def get_value(self, Value):
-        return (image_prim(Value, Value, Value), )
+        bd = BlenderData(Value)
+        return (bd, bd.as_out(), Value)
+    
+class BlenderRGB:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "Mode": (["RGB", "HSV"], ),
+                "Red/Hue": ("FLOAT", {"default": 1.0, "step": 0.01, "min": 0.0, "max": 1.0}),
+                "Green/Saturation": ("FLOAT", {"default": 1.0, "step": 0.01, "min": 0.0, "max": 1.0}),
+                "Blue/Value": ("FLOAT", {"default": 1.0, "step": 0.01, "min": 0.0, "max": 1.0}),
+                "Alpha": ("FLOAT", {"default": 1.0, "step": 0.01, "min": 0.0, "max": 1.0}),
+            },
+            # TODO: Can dynamic optional inputs be done based on Channels selected?
+        }
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(),)
+    RETURN_NAMES = ("Color", "Image")
+    FUNCTION = "get_rgb"
+    CATEGORY = "Blender/Input" 
+    
+    def get_value(self, **kwargs):
+        mode = kwargs["Mode"]
+        r = kwargs["Red/Hue"]
+        g = kwargs["Green/Saturation"]
+        b = kwargs["Blue/Value"]
+        a = kwargs["Alpha"]
+        
+        if mode == "RGB":
+            bd = BlenderData((r, g, b, a))
+        
+        if mode == "HSV":
+            r, g, b = hsv_to_rgb_primitive(r, g, b)
+            bd = BlenderData((r, g, b, a))
+        
+        return (bd, bd.as_out())
 
 class BlenderBrightnessContrast:
     def __init__(self):
@@ -102,40 +74,38 @@ class BlenderBrightnessContrast:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Color": ("IMAGE",),
-                **INPUT_RGB_WHITE,
-                "Bright": ("IMAGE",),
-                "BrightF": ("FLOAT", {"default": 0.0, "min": -100.0, "max": 100.0, "step": 0.01}),
-                "Contrast": ("IMAGE",),
-                "ContrastF": ("FLOAT", {"default": 0.0, "min": -100.0, "max": 100.0, "step": 0.01}),
+                **COLOR_INPUT("Color"),
+                **FLOAT_INPUT("Bright", 0.0, -100.0, 100.0, 0.01),
+                **FLOAT_INPUT("Contrast", 0.0, -100.0, 100.0, 0.01),
             },
         }
+    
+        
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = (*BLENDER_OUTPUT(),)
+    RETURN_NAMES = ("Color", "Image")
     FUNCTION = "brightness_contrast"
     CATEGORY = "Blender/Color" 
 
-    def brightness_contrast(self, ColorR, ColorG, ColorB, BrightF, ContrastF, Color: torch.Tensor = IMAGE_NONE, Bright: torch.Tensor = IMAGE_NONE, Contrast: torch.Tensor = IMAGE_NONE):
-        if Color == IMAGE_NONE:
-            Color = image_prim(ColorR, ColorG, ColorB)
-        if Bright == IMAGE_NONE:
-            Bright = image_prim(BrightF, BrightF, BrightF)
-        if Contrast == IMAGE_NONE:
-            Contrast = image_prim(ContrastF, ContrastF, ContrastF)
+    def brightness_contrast(self, **kwargs):
+        b_color = BlenderData(kwargs, "Color")
+        b_bright = BlenderData(kwargs, "Bright")
+        b_contrast = BlenderData(kwargs, "Contrast")
+        guess_canvas(b_color, b_bright, b_contrast)
         
-        Bright = col_to_float(Bright)
-        Contrast = col_to_float(Contrast)
-        Color, Color_Alpha = split_rgba(Color)
-        Color, Color_Alpha, Bright, Contrast = make_common_shape(Color, Color_Alpha, Bright, Contrast)
-
-        Color = torch.pow(Color, 2.2) # TODO: Blender uses sRGB by default. How should colorspace be handled?
+        color, alpha = b_color.as_rgb_a()
+        bright = b_bright.as_float()
+        contrast = b_contrast.as_float()
 
         # (bright + color * (contrast + val(1.0f)) - contrast * val(0.5f)).max(val(0.0f))
-        res = (Bright + Color * (Contrast + 1.0) - Contrast * 0.5).maximum(torch.zeros_like(Color))
-        
-        res = torch.pow(res, 1/2.2)
+        res = (bright + color * (contrast + 1.0) - contrast * 0.5).maximum(torch.zeros_like(color))
 
-        return (join_rgba(res, Color_Alpha), )
+        b_res = BlenderData(res, alpha)
+
+        return (b_res, b_res.as_out(), )
     
 class BlenderGamma:
     def __init__(self):
@@ -145,28 +115,31 @@ class BlenderGamma:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Color": ("IMAGE",),
-                **INPUT_RGB_WHITE,
-                "Gamma": ("IMAGE",),
-                "GammaF": ("FLOAT", {"default": 1.0, "min": 0.0001, "max": 100000, "step": 0.00001}),
+                **COLOR_INPUT("Color"),
+                **FLOAT_INPUT("Gamma", 1.0, 0.0001, 1000, 0.001),
             },
         }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = (*BLENDER_OUTPUT(),)
+    RETURN_NAMES = ("Color", "Image")
     FUNCTION = "gamma"
     CATEGORY = "Blender/Color"
 
-    def gamma(self, ColorR: float, ColorG: float, ColorB: float, GammaF: float, Color: torch.Tensor = IMAGE_NONE, Gamma: torch.Tensor = IMAGE_NONE):
-        if Color == IMAGE_NONE:
-            Color = image_prim(ColorR, ColorG, ColorB)
-        if Gamma == IMAGE_NONE:
-            Gamma = image_prim(GammaF, GammaF, GammaF)
-        Gamma = col_to_float(Gamma)
-        Color, Color_Alpha = split_rgba(Color)
-        Color, Color_Alpha, Gamma = make_common_shape(Color, Color_Alpha, Gamma)
+    def gamma(self, **kwargs):
+        b_color = BlenderData(kwargs, "Color")
+        b_gamma = BlenderData(kwargs, "Gamma")
+        guess_canvas(b_color, b_gamma)
 
-        res = torch.pow(Color, Gamma).maximum(torch.zeros_like(Color))
-        return (join_rgba(res, Color_Alpha), )
+        color, alpha = b_color.as_rgb_a()
+        gamma = b_gamma.as_float()
+
+        res = torch.pow(color, gamma).maximum(torch.zeros_like(color))
+        b_res = BlenderData(res, alpha)
+        return (b_res, b_res.as_out())
 
 class BlenderInvertColor:
     def __init__(self):
@@ -176,31 +149,73 @@ class BlenderInvertColor:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Fac": ("IMAGE", ),
-                "FacF": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "Color": ("IMAGE",),
-                **INPUT_RGB_BLACK,
+                **FLOAT_INPUT("Fac", 1.0),
+                **COLOR_INPUT("Color", 0.0),
             },
         }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Color", "Image")
     FUNCTION = "invert"
     CATEGORY = "Blender/Color"
 
-    def invert(self, FacF, ColorR, ColorG, ColorB, Color: torch.Tensor = IMAGE_NONE, Fac: torch.Tensor = IMAGE_NONE):
-        if Color == IMAGE_NONE:
-            Color = image_prim(ColorR, ColorG, ColorB)
-        if Fac == IMAGE_NONE:
-            Fac = image_prim(FacF, FacF, FacF)
-        
-        Fac = col_to_float(Fac)
-        Color, Color_Alpha = split_rgba(Color)
-        Color, Color_Alpha, Fac = make_common_shape(Color, Color_Alpha, Fac)
+    def invert(self, **kwargs):
+        b_color = BlenderData(kwargs, "Color")
+        b_fac = BlenderData(kwargs, "Fac")
+        guess_canvas(b_color, b_fac)
 
-        Color = torch.pow(Color, 2.2) # TODO: Blender uses sRGB by default. How should colorspace be handled?
+        color, alpha = b_color.as_rgb_a()
+        fac = b_fac.as_float()
 
-        # (bright + color * (contrast + val(1.0f)) - contrast * val(0.5f)).max(val(0.0f))
-        res = ((1.0-Color)*Fac + Color*(1.0-Fac)).maximum(torch.zeros_like(Color))
+        res = ((1.0-color)*fac + color*(1.0-fac)).maximum(torch.zeros_like(color))
         
-        res = torch.pow(res, 1/2.2)
-        return (join_rgba(res, Color_Alpha), )
+        b_res = BlenderData(res, alpha)
+        return (b_res, b_res.as_out())
+    
+class BlenderSeparateColor:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Mode": (["RGB", "HSV", "HSL"], ), #TODO: YUV, YCbCr
+                **COLOR_INPUT("Color", 1.0, True),
+            }
+            # TODO: Can dynamic optional inputs be done based on Mode selected?
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(),)
+    RETURN_NAMES = ("R/H", "R/H", "G/S", "G/S", "B/V", "B/V", "A", "A")
+    FUNCTION = "separate_color"
+    CATEGORY = "Blender/Converter"
+    
+    def separate_color(self, **kwargs):
+        mode = kwargs["Mode"]
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col)
+        
+        rgb, a = b_col.as_rgb_a()
+
+        if mode == "RGB":
+            pass
+
+        if mode == "HSV":
+            rgb = rgb_to_hsv(rgb)
+
+        if mode == "HSL":
+            rgb = rgb_to_hsl(rgb)
+
+        r, g, b = rgb.split(1, dim=-1)
+        b_r, b_g, b_b, b_a = BlenderData(r), BlenderData(g), BlenderData(b), BlenderData(a)
+        
+        return (b_r, b_r.as_out(), b_g, b_g.as_out(), b_b, b_b.as_out(), b_a, b_a.as_out())
