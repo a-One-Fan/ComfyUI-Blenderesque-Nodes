@@ -50,7 +50,7 @@ class BlenderRGB:
     FUNCTION = "get_rgb"
     CATEGORY = "Blender/Input" 
     
-    def get_value(self, **kwargs):
+    def get_rgb(self, **kwargs):
         mode = kwargs["Mode"]
         r = kwargs["Red/Hue"]
         g = kwargs["Green/Saturation"]
@@ -219,3 +219,82 @@ class BlenderSeparateColor:
         b_r, b_g, b_b, b_a = BlenderData(r), BlenderData(g), BlenderData(b), BlenderData(a)
         
         return (b_r, b_r.as_out(), b_g, b_g.as_out(), b_b, b_b.as_out(), b_a, b_a.as_out())
+    
+
+class BlenderMapRange:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Data Type": (["Float", "Vector"], ),
+                "Interpolation Type": (["Linear", "Stepped Linear", "Smooth Step", "Smoother Step"], ),
+                "Clamp": ("BOOL", {"default": True}),
+                **FLOAT_INPUT("Value", 1.0),
+                **FLOAT_INPUT("From Min Float", 0.0),
+                **FLOAT_INPUT("From Max Float", 1.0),
+                **FLOAT_INPUT("To Min Float", 0.0),
+                **FLOAT_INPUT("To Max Float", 1.0),
+                **VECTOR_INPUT("Vector", 0.0, hidden_default=True),
+                **VECTOR_INPUT("From Min Vector", 0.0),
+                **VECTOR_INPUT("From Max Vector", 1.0),
+                **VECTOR_INPUT("To Min Vector", 0.0),
+                **VECTOR_INPUT("To Max Vector", 1.0),
+                **FLOAT_INPUT("Steps", 4.0),
+            }
+            # TODO: Can dynamic optional inputs be done based on Mode selected?
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Result", "Result")
+    FUNCTION = "map_range"
+    CATEGORY = "Blender/Converter"
+    
+    def map_range(self, **kwargs):
+        dtype = kwargs["Data Type"]
+        mode = kwargs["Interpolation Type"]
+
+        if dtype == "Float":
+            b_val = BlenderData(kwargs, "Value")
+            b_frommin = BlenderData(kwargs, "From Min Float")
+            b_frommax = BlenderData(kwargs, "From Max Float")
+            b_tomin = BlenderData(kwargs, "To Min Float")
+            b_tomax = BlenderData(kwargs, "To Max Float")
+            
+            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
+
+            val = b_val.as_float()
+            frommin = b_frommin.as_float()
+            frommax = b_frommax.as_float()
+            tomin = b_tomin.as_float()
+            tomax = b_tomax.as_float()
+        elif dtype == "Vector":
+            b_val = BlenderData(kwargs, "Vector")
+            b_frommin = BlenderData(kwargs, "From Min Vector")
+            b_frommax = BlenderData(kwargs, "From Max Vector")
+            b_tomin = BlenderData(kwargs, "To Min Vector")
+            b_tomax = BlenderData(kwargs, "To Max Vector")
+            
+            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
+
+            val = b_val.as_rgb()
+            frommin = b_frommin.as_rgb()
+            frommax = b_frommax.as_rgb()
+            tomin = b_tomin.as_rgb()
+            tomax = b_tomax.as_rgb()
+
+        # tomin - fac * tomin + fac * tomax = val
+        # (tomax - tomin)*fac = val - tomin
+        # fac = (val - tomin) / (tomax - tomin)
+        fac = (val - frommin) / (frommax - frommin)
+        res = (1.0 - fac) * tomin + fac * tomax
+
+        b_r = BlenderData(res, no_colortransform=True)
+        
+        return (b_r, b_r.as_out(), )

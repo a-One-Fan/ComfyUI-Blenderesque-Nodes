@@ -1,6 +1,8 @@
 from .cl_wrapper import *
 from .nodes import *
 
+# WEB_DIRECTORY = "./web"
+
 NODE_CLASS_MAPPINGS = {
     "BlenderValue": BlenderValue,
     "BlenderRGB": BlenderRGB,
@@ -21,7 +23,7 @@ NODE_CLASS_MAPPINGS = {
     #"BlenderClamp": BlenderClamp,
     #"BlenderCombineColor": BlenderCombineColor,
     #"BlenderCombineXYZ": BlenderCombineXYZ,
-    #"BlenderMapRange": BlenderMapRange,
+    "BlenderMapRange": BlenderMapRange,
     #"BlenderMath": BlenderMath,
     #"BlenderRGBtoBW": BlenderRGBtoBW,
     "BlenderSeparateColor": BlenderSeparateColor,
@@ -50,7 +52,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     #"BlenderClamp": "Clamp",
     #"BlenderCombineColor": "Combine Color",
     #"BlenderCombineXYZ": "Combine XYZ",
-    #"BlenderMapRange": "Map Range",
+    "BlenderMapRange": "Map Range",
     #"BlenderMath": "Math",
     #"BlenderRGBtoBW": "RGB to BW",
     "BlenderSeparateColor": "Separate Color",

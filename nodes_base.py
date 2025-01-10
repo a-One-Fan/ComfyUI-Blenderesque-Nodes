@@ -191,7 +191,9 @@ COLMAX = 1.0
 # ComfyUI does not seem to have soft min/max?
 COLSTEP = 0.005
 
-def COLOR_INPUT(name, default=1.0, alpha=False, step=COLSTEP, max=COLMAX, astep=0.005):
+def COLOR_INPUT(name, default=1.0, alpha=False, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=False):
+    if hidden_default:
+        return {name: ("*", {})}
     base = {name: ("*", {}),
             name+"R": ("FLOAT", {"default": default, "min": 0.0, "max": max, "step": step}),
             name+"G": ("FLOAT", {"default": default, "min": 0.0, "max": max, "step": step}),
@@ -201,11 +203,15 @@ def COLOR_INPUT(name, default=1.0, alpha=False, step=COLSTEP, max=COLMAX, astep=
     
     return base
 
-def FLOAT_INPUT(name, default=0.0, min=0.0, max=1.0, step=COLSTEP):
+def FLOAT_INPUT(name, default=0.0, min=0.0, max=1.0, step=COLSTEP, hidden_default=False):
+    if hidden_default:
+        return {name: ("*", {})}
     return {name: ("*", {}),
             name+"F": ("FLOAT", {"default": default, "min": min, "max": max, "step": step})}
 
-def VECTOR_INPUT(name, default=0.0, min=-100000.0, max=100000.0, step=0.01):
+def VECTOR_INPUT(name, default=0.0, min=-100000.0, max=100000.0, step=0.01, hidden_default=False):
+    if hidden_default:
+        return {name: ("*", {})}
     return {name: ("*", {}),
             name+"X": ("FLOAT", {"default": default, "min": min, "max": max, "step": step}),
             name+"Y": ("FLOAT", {"default": default, "min": min, "max": max, "step": step}),

@@ -32,7 +32,7 @@ Currently the list is incomplete.<br>
 <summary>Input</summary>
 <ul>
 <li><span style="color:LightGreen">Value ✔</span></li>
-<li><span style="color:IndianRed">RGB ❌</span></li>
+<li><span style="color:LightGreen">RGB ✔</span></li>
 <li><span style="color:IndianRed">Bokeh Image ❌</span></li>
 Most other input nodes seem redundant or not applicable.
 </ul>
@@ -71,7 +71,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Combine Color ❌</span></li>
 <li><span style="color:IndianRed">Combine XYZ ❌</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
-<li><span style="color:IndianRed">Map Range ❌</span></li>
+<li><span style="color:GoldenRod">Map Range O (Missing input hiding)</span></li>
 <li><span style="color:IndianRed">Math ❌</span></li>
 <li><span style="color:IndianRed">Mix ❌</span></li>
 <li><span style="color:IndianRed">RGB to BW ❌</span></li>
