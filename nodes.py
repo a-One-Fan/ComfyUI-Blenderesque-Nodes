@@ -351,6 +351,38 @@ class BlenderBlackbody:
         b_res = BlenderData(res, no_colortransform=True)
         return (b_res, b_res.as_out())
     
+class BlenderWavelength:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **FLOAT_INPUT("Wavelength", 500.0, 380.0, 780.0),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Color", "Image")
+    FUNCTION = "wavelength"
+    CATEGORY = "Blender/Converter"
+
+    def wavelength(self, **kwargs):
+        b_fac = BlenderData(kwargs, "Wavelength")
+        guess_canvas(b_fac)
+
+        fac = b_fac.as_float()
+
+        res = wavelength_to_xyz(fac)
+        
+        b_res = BlenderData(res, no_colortransform=True)
+        return (b_res, b_res.as_out())
+    
 class BlenderRGBtoBW:
     def __init__(self):
         pass

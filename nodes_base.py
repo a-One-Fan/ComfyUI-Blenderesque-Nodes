@@ -94,7 +94,7 @@ class BlenderData:
                     padded += [1.0]
                 return torch.stack([torch.full(size, val) for val in padded], dim=-1)
             else:
-                return torch.cat(torch.full((*size, 3), self.value), torch.ones((*size, 1), dim=-1))
+                return torch.cat((torch.full((*size, 3), self.value), torch.ones((*size, 1))), dim=-1)
         
         if self.image.size()[3] == 1:
             return torch.cat((self.image, self.image, self.image, torch.ones(*size, 1)), dim=-1)

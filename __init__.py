@@ -29,7 +29,7 @@ NODE_CLASS_MAPPINGS = {
     "BlenderSeparateColor": BlenderSeparateColor,
     "BlenderSeparateXYZ": BlenderSeparateXYZ,
     #"BlenderVectorMath": BlenderVectorMath,
-    #"BlenderWavelength": BlenderWavelength,
+    "BlenderWavelength": BlenderWavelength,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -58,5 +58,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BlenderSeparateColor": "Separate Color",
     "BlenderSeparateXYZ": "Separate XYZ",
     #"BlenderVectorMath": "Vector Math",
-    #"BlenderWavelength": "Wavelength",
+    "BlenderWavelength": "Wavelength",
 }
