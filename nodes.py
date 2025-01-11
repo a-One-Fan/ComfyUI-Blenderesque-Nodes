@@ -436,4 +436,49 @@ class BlenderCombineXYZ:
         
         b_res = BlenderData(torch.cat((x, y, z), dim=-1), no_colortransform=True)
         return (b_res, b_res.as_out())
+    
+class BlenderClamp:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Clamp Type": (["Min Max", "Range"], ),
+                **FLOAT_INPUT("Value", 1.0, -inf, inf),
+                **FLOAT_INPUT("Min", 0.0, -inf, inf),
+                **FLOAT_INPUT("Max", 1.0, -inf, inf),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Result", "Result")
+    FUNCTION = "clamp"
+    CATEGORY = "Blender/Converter"
+
+    def clamp(self, **kwargs):
+        b_val = BlenderData(kwargs, "Value")
+        b_min = BlenderData(kwargs, "Min")
+        b_max = BlenderData(kwargs, "Max")
+        guess_canvas(b_val, b_min, b_max)
+
+        mode = kwargs["Clamp Type"]
+
+        val, mi, mx = b_val.as_float(), b_min.as_float(), b_max.as_float()
+
+        if mode == "Range":
+            miswap = tmix(mi, mx, mi > mx)
+            mxswap = tmix(mx, mi, mi > mx)
+            mi = miswap
+            mx = mxswap
+
+        val = tmix(tmix(val, mi, val < mi), mx, val > mx)
+        
+        b_res = BlenderData(val)
+        return (b_res, b_res.as_out())
 

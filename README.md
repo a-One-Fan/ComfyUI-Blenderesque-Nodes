@@ -67,7 +67,7 @@ Most other input nodes seem redundant or not applicable.
 <summary>Converter</summary>
 <ul>
 <li><span style="color:GoldenRod">Blackbody O (Missing rec709->linear, very minor color difference)</span></li>
-<li><span style="color:IndianRed">Clamp ❌</span></li>
+<li><span style="color:LightGreen">Clamp ✔</span></li>
 <li><span style="color:DimGrey">Color Ramp -</span></li>
 <li><span style="color:IndianRed">Combine Color ❌</span></li>
 <li><span style="color:LightGreen">Combine XYZ ✔</span></li>
