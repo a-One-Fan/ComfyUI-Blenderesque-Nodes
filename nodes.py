@@ -184,7 +184,7 @@ class BlenderSeparateColor:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Mode": (["RGB", "HSV", "HSL"], ), #TODO: YUV, YCbCr
+                "Mode": (["RGB", "HSV", "HSL", "YUV", "YCbCr"], ),
                 **COLOR_INPUT("Color", 1.0, True),
             }
             # TODO: Can dynamic optional inputs be done based on Mode selected?
@@ -195,7 +195,7 @@ class BlenderSeparateColor:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(),)
-    RETURN_NAMES = ("R/H", "R/H", "G/S", "G/S", "B/V", "B/V", "A", "A")
+    RETURN_NAMES = ("R", "R", "G", "G", "B", "B", "A", "A")
     FUNCTION = "separate_color"
     CATEGORY = "Blender/Converter"
     
@@ -214,6 +214,12 @@ class BlenderSeparateColor:
 
         if mode == "HSL":
             rgb = rgb_to_hsl(rgb)
+
+        if mode == "YUV":
+            rgb = rgb_to_yuv(rgb)
+
+        if mode == "YCbCr":
+            rgb = rgb_to_ycc(rgb)
 
         r, g, b = rgb.split(1, dim=-1)
         b_r, b_g, b_b, b_a = BlenderData(r), BlenderData(g), BlenderData(b), BlenderData(a)
@@ -482,3 +488,109 @@ class BlenderClamp:
         b_res = BlenderData(val)
         return (b_res, b_res.as_out())
 
+class BlenderHueSaturationValue:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **FLOAT_INPUT("Hue", 0.5),
+                **FLOAT_INPUT("Saturation", 1.0, 0.0, 5.0),
+                **FLOAT_INPUT("Value", 1.0, 0.0, 5.0),
+                **FLOAT_INPUT("Fac", 1.0, 0.0, 1.0),
+                **COLOR_INPUT("Color"),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Result", "Result")
+    FUNCTION = "do_hsv"
+    CATEGORY = "Blender/Color"
+
+    def do_hsv(self, **kwargs):
+        b_hue = BlenderData(kwargs, "Hue")
+        b_sat = BlenderData(kwargs, "Saturation")
+        b_val = BlenderData(kwargs, "Value")
+        b_fac = BlenderData(kwargs, "Fac")
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_hue, b_sat, b_val, b_fac, b_col)
+
+        hue, sat, val, fac = b_hue.as_float(), b_sat.as_float(), b_val.as_float(), b_fac.as_float()
+        col, alpha = b_col.as_rgb_a()
+
+        hsv = rgb_to_hsv(col)
+        h, s, v = hsv.split(1, dim=-1)
+        h += hue - 0.5
+        h = torch.remainder(h, torch.ones_like(h))
+        s *= sat
+        s = torch.clamp(s, 0.0, 1.0)
+        v *= val
+        v = torch.clamp(v, 0.0, 1.0)
+
+        rgb = hsv_to_rgb(torch.cat((h, s, v), dim=-1))
+        rgb = tmix(col, rgb, fac)
+
+        b_res = BlenderData(rgb, alpha)
+        return (b_res, b_res.as_out())
+
+class BlenderCombineColor:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Mode": (["RGB", "HSV", "HSL", "YUV", "YCbCr"], ),
+                **FLOAT_INPUT("R"),
+                **FLOAT_INPUT("G"),
+                **FLOAT_INPUT("B"),
+                **FLOAT_INPUT("A"),
+            }
+            # TODO: Can dynamic optional inputs be done based on Mode selected?
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Color", "Image", )
+    FUNCTION = "combine_color"
+    CATEGORY = "Blender/Converter"
+    
+    def combine_color(self, **kwargs):
+        mode = kwargs["Mode"]
+        b_r = BlenderData(kwargs, "R")
+        b_g = BlenderData(kwargs, "G")
+        b_b = BlenderData(kwargs, "B")
+        b_a = BlenderData(kwargs, "A")
+        guess_canvas(b_r, b_g, b_b, b_a)
+        
+        r, g, b, a = b_r.as_float(), b_g.as_float(), b_b.as_float(), b_a.as_float()
+        rgb = torch.cat((r, g, b), dim=-1)
+
+        if mode == "RGB":
+            pass
+
+        if mode == "HSV":
+            rgb = hsv_to_rgb(rgb)
+
+        if mode == "HSL":
+            rgb = hsl_to_rgb(rgb)
+
+        if mode == "YUV":
+            rgb = yuv_to_rgb(rgb)
+
+        if mode == "YCbCr":
+            rgb = ycc_to_rgb(rgb)
+
+        b_res = BlenderData(rgb, a)
+        
+        return (b_res, b_res.as_out(), )

@@ -45,9 +45,9 @@ def hsv_to_rgb(hsv: torch.Tensor):
     ng = 2.0 - torch.abs(h * 6.0 - 2.0)
     nb = 2.0 - torch.abs(h * 6.0 - 4.0)
 
-    torch.clamp(nr, 0.0, 1.0)
-    torch.clamp(ng, 0.0, 1.0)
-    torch.clamp(nb, 0.0, 1.0)
+    nr = torch.clamp(nr, 0.0, 1.0)
+    ng = torch.clamp(ng, 0.0, 1.0)
+    nb = torch.clamp(nb, 0.0, 1.0)
 
     r_r = ((nr - 1.0) * s + 1.0) * v
     r_g = ((ng - 1.0) * s + 1.0) * v
@@ -85,9 +85,9 @@ def hsl_to_rgb(hsl: torch.Tensor):
     ng = 2.0 - torch.abs(h * 6.0 - 2.0)
     nb = 2.0 - torch.abs(h * 6.0 - 4.0)
 
-    torch.clamp(nr, 0.0, 1.0)
-    torch.clamp(nb, 0.0, 1.0)
-    torch.clamp(ng, 0.0, 1.0)
+    nr = torch.clamp(nr, 0.0, 1.0)
+    nb = torch.clamp(nb, 0.0, 1.0)
+    ng = torch.clamp(ng, 0.0, 1.0)
 
     chroma = (1.0 - torch.abs(2.0 * l - 1.0)) * s
 

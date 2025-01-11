@@ -44,7 +44,7 @@ Most other input nodes seem redundant or not applicable.
 <ul>
 <li><span style="color:LightGreen">Brightness/Contrast ✔</span></li>
 <li><span style="color:LightGreen">Gamma ✔</span></li>
-<li><span style="color:IndianRed">Hue/Saturation/Value ❌</span></li>
+<li><span style="color:LightGreen">Hue/Saturation/Value ✔</span></li>
 <li><span style="color:LightGreen">Invert Color ✔</span></li>
 <li><span style="color:DimGrey">Light Falloff -</span></li>
 <li><span style="color:IndianRed">Mix Color ❌ (see Mix converter)</span></li>
@@ -69,14 +69,14 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:GoldenRod">Blackbody O (Missing rec709->linear, very minor color difference)</span></li>
 <li><span style="color:LightGreen">Clamp ✔</span></li>
 <li><span style="color:DimGrey">Color Ramp -</span></li>
-<li><span style="color:IndianRed">Combine Color ❌</span></li>
+<li><span style="color:GoldenRod">Combine Color O (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Combine XYZ ✔</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
 <li><span style="color:GoldenRod">Map Range O (Missing input hiding, interp methods untested)</span></li>
 <li><span style="color:IndianRed">Math ❌</span></li>
 <li><span style="color:IndianRed">Mix ❌</span></li>
 <li><span style="color:LightGreen">RGB to BW ✔</span></li>
-<li><span style="color:GoldenRod">Separate Color O (Missing YUV and YCbCr)</span></li>
+<li><span style="color:GoldenRod">Separate Color O (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Separate XYZ ✔</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
 <li><span style="color:IndianRed">Wavelength ❌</span></li>
