@@ -25,6 +25,7 @@ Currently the list is incomplete.<br>
 <summary>Meta Utility Nodes</summary>
 <ul>
 <li><span style="color:IndianRed">Resize Canvas ❌</span></li>
+<li><span style="color:IndianRed">Extract Data ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
 </ul>
 </details>
 
@@ -65,7 +66,7 @@ Most other input nodes seem redundant or not applicable.
 <details>
 <summary>Converter</summary>
 <ul>
-<li><span style="color:IndianRed">Blackbody ❌</span></li>
+<li><span style="color:GoldenRod">Blackbody O (Missing rec709->linear, very minor color difference)</span></li>
 <li><span style="color:IndianRed">Clamp ❌</span></li>
 <li><span style="color:DimGrey">Color Ramp -</span></li>
 <li><span style="color:IndianRed">Combine Color ❌</span></li>
@@ -74,7 +75,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:GoldenRod">Map Range O (Missing input hiding)</span></li>
 <li><span style="color:IndianRed">Math ❌</span></li>
 <li><span style="color:IndianRed">Mix ❌</span></li>
-<li><span style="color:IndianRed">RGB to BW ❌</span></li>
+<li><span style="color:LightGreen">RGB to BW ✔</span></li>
 <li><span style="color:GoldenRod">Separate Color O (Missing YUV and YCbCr)</span></li>
 <li><span style="color:IndianRed">Separate XYZ ❌</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>

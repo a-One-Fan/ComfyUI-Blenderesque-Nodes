@@ -232,11 +232,11 @@ class BlenderMapRange:
                 "Data Type": (["Float", "Vector"], ),
                 "Interpolation Type": (["Linear", "Stepped Linear", "Smooth Step", "Smoother Step"], ),
                 "Clamp": ("BOOLEAN", {"default": True}),
-                **FLOAT_INPUT("Value", 1.0),
-                **FLOAT_INPUT("From Min Float", 0.0),
-                **FLOAT_INPUT("From Max Float", 1.0),
-                **FLOAT_INPUT("To Min Float", 0.0),
-                **FLOAT_INPUT("To Max Float", 1.0),
+                **FLOAT_INPUT("Value", 1.0, -inf, inf),
+                **FLOAT_INPUT("From Min Float", 0.0, -inf, inf),
+                **FLOAT_INPUT("From Max Float", 1.0, -inf, inf),
+                **FLOAT_INPUT("To Min Float", 0.0, -inf, inf),
+                **FLOAT_INPUT("To Max Float", 1.0, -inf, inf),
                 **VECTOR_INPUT("Vector", 0.0, hidden_default=True),
                 **VECTOR_INPUT("From Min Vector", 0.0),
                 **VECTOR_INPUT("From Max Vector", 1.0),
@@ -312,3 +312,64 @@ class BlenderMapRange:
         b_r = BlenderData(res, no_colortransform=True)
         
         return (b_r, b_r.as_out(), )
+    
+class BlenderBlackbody:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **FLOAT_INPUT("Temperature", 1500.0, 800.0, 12000.0),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Color", "Image")
+    FUNCTION = "blackbody"
+    CATEGORY = "Blender/Converter"
+
+    def blackbody(self, **kwargs):
+        b_fac = BlenderData(kwargs, "Temperature")
+        guess_canvas(b_fac)
+
+        fac = b_fac.as_float()
+
+        res = blackbody_temperature_to_rec709(fac) # TODO: rec709 -> linear?
+        
+        b_res = BlenderData(res, no_colortransform=True)
+        return (b_res, b_res.as_out())
+    
+class BlenderRGBtoBW:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **COLOR_INPUT("Color", default=0.5),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Val", "Image")
+    FUNCTION = "rgb_to_bw"
+    CATEGORY = "Blender/Converter"
+
+    def rgb_to_bw(self, **kwargs):
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col)
+        
+        b_res = BlenderData(b_col.as_float())
+        return (b_res, b_res.as_out())
+

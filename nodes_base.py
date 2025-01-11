@@ -127,7 +127,7 @@ class BlenderData:
         rgb, a = self.as_rgb_a(batch)
         return rgb
     
-    def as_float(self, batch=1) -> torch.Tensor:
+    def as_float(self, batch=1, use_alpha=False) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 1] tensor"""
         if self.image == None:
             if type(self.value) == tuple: 
@@ -139,7 +139,10 @@ class BlenderData:
         if self.image.size()[3] == 1:
             return self.image
         if self.image.size()[3] in [3, 4]:
-            return torch.unsqueeze(torch.mean(self.image, dim=-1), dim=-1)
+            im_alt = self.image
+            if not use_alpha and self.image.size()[3] == 4:
+                im_alt = torch.cat(im_alt.split(1, dim=-1)[:-1], dim=-1)
+            return torch.unsqueeze(torch.mean(im_alt, dim=-1), dim=-1)
         
         raise Exception(f"Failed to interpret tensor of size {self.image.size()} as float!")
         return None
