@@ -594,3 +594,42 @@ class BlenderCombineColor:
         b_res = BlenderData(rgb, a)
         
         return (b_res, b_res.as_out(), )
+    
+class BlenderSetAlpha:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Mode": (["Apply Mask", "Replace Alpha"], ),
+                **COLOR_INPUT("Color", 1.0),
+                **FLOAT_INPUT("Alpha", 1.0, 0.0, 1.0),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Result", "Result")
+    FUNCTION = "set_alpha"
+    CATEGORY = "Blender/Color"
+
+    def set_alpha(self, **kwargs):
+        b_col = BlenderData(kwargs, "Color")
+        b_alpha = BlenderData(kwargs, "Alpha")
+        guess_canvas(b_col, b_alpha)
+
+        mode = kwargs["Mode"]
+
+        col, orig_alpha = b_col.as_rgb_a()
+        new_alpha = b_alpha.as_float()
+
+        if mode == "Apply Mask":
+            new_alpha *= orig_alpha
+        
+        b_res = BlenderData(col, new_alpha)
+        return (b_res, b_res.as_out())

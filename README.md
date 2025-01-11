@@ -59,7 +59,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Z Combine ❌</span></li>
 <li><span style="color:IndianRed">Alpha Convert ❌</span></li>
 <li><span style="color:IndianRed">Convert Colorspace ❌</span></li>
-<li><span style="color:IndianRed">Set Alpha ❌</span></li>
+<li><span style="color:LightGreen">Set Alpha ✔</span></li>
 </ul>
 </details>
 
@@ -80,5 +80,22 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Separate XYZ ✔</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
 <li><span style="color:IndianRed">Wavelength ❌</span></li>
+</ul>
+</details>
+
+<details>
+<summary>Transform</summary>
+<ul>
+<li><span style="color:IndianRed">Rotate ❌</span></li>
+<li><span style="color:IndianRed">Scale ❌</span></li>
+<li><span style="color:IndianRed">Transform ❌</span></li>
+<li><span style="color:IndianRed">Translate ❌</span></li>
+<li><span style="color:IndianRed">Corner Pin ❌</span></li>
+<li><span style="color:IndianRed">Crop ❌</span></li>
+<li><span style="color:IndianRed">Displace ❌</span></li>
+<li><span style="color:IndianRed">Flip ❌</span></li>
+<li><span style="color:IndianRed">Map UV ❌</span></li>
+<li><span style="color:IndianRed">Lens Distortion ❌</span></li>
+<li><span style="color:IndianRed">Movie Distortion ❌</span></li>
 </ul>
 </details>
