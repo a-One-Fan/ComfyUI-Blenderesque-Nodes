@@ -372,4 +372,68 @@ class BlenderRGBtoBW:
         
         b_res = BlenderData(b_col.as_float())
         return (b_res, b_res.as_out())
+    
+class BlenderSeparateXYZ:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **VECTOR_INPUT("Vector"),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("X", "X", "Y", "Y", "Z", "Z")
+    FUNCTION = "separate_xyz"
+    CATEGORY = "Blender/Converter"
+
+    def separate_xyz(self, **kwargs):
+        b_vec = BlenderData(kwargs, "Vector", no_colortransform=True)
+        guess_canvas(b_vec)
+        
+        xyz = b_vec.as_rgb()
+        x, y, z = xyz.split(1, dim=-1)
+        b_x, b_y, b_z = BlenderData(x), BlenderData(y), BlenderData(z)
+        return (b_x, b_x.as_out(), b_y, b_y.as_out(), b_z, b_z.as_out())
+    
+class BlenderCombineXYZ:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **FLOAT_INPUT("X", default=0.0),
+                **FLOAT_INPUT("Y", default=0.0),
+                **FLOAT_INPUT("Z", default=0.0),
+            },
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Vector", "Image")
+    FUNCTION = "combine_xyz"
+    CATEGORY = "Blender/Converter"
+
+    def combine_xyz(self, **kwargs):
+        b_x = BlenderData(kwargs, "X")
+        b_y = BlenderData(kwargs, "Y")
+        b_z = BlenderData(kwargs, "Z")
+        guess_canvas(b_x, b_y, b_z)
+
+        x, y, z = b_x.as_float(), b_y.as_float(), b_z.as_float()
+        
+        b_res = BlenderData(torch.cat((x, y, z), dim=-1), no_colortransform=True)
+        return (b_res, b_res.as_out())
 

@@ -16,7 +16,7 @@ Currently implemented nodes:<br>
 <span style="color:LightGreen">Green with ✔</span> = Implemented<br>
 <span style="color:IndianRed">Red with ❌</span> = Not implemented<br>
 <span style="color:DimGrey">Dark grey with -</span> = Probably won't be implemented?<br>
-<SPAN STYLE="color:GoldenRod">Yellow with O</span> = Partially implemented<br>
+<SPAN STYLE="color:GoldenRod">Yellow with O</span> = Partially implemented, useable<br>
 Hopefully I'll figure out a way to do colorramps at some point.<br>
 Blender lacks some compositor-applicable shader nodes, so this list will also include some shader nodes.<br>
 Currently the list is incomplete.<br>
@@ -70,14 +70,14 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Clamp ❌</span></li>
 <li><span style="color:DimGrey">Color Ramp -</span></li>
 <li><span style="color:IndianRed">Combine Color ❌</span></li>
-<li><span style="color:IndianRed">Combine XYZ ❌</span></li>
+<li><span style="color:LightGreen">Combine XYZ ✔</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
-<li><span style="color:GoldenRod">Map Range O (Missing input hiding)</span></li>
+<li><span style="color:GoldenRod">Map Range O (Missing input hiding, interp methods untested)</span></li>
 <li><span style="color:IndianRed">Math ❌</span></li>
 <li><span style="color:IndianRed">Mix ❌</span></li>
 <li><span style="color:LightGreen">RGB to BW ✔</span></li>
 <li><span style="color:GoldenRod">Separate Color O (Missing YUV and YCbCr)</span></li>
-<li><span style="color:IndianRed">Separate XYZ ❌</span></li>
+<li><span style="color:LightGreen">Separate XYZ ✔</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
 <li><span style="color:IndianRed">Wavelength ❌</span></li>
 </ul>
