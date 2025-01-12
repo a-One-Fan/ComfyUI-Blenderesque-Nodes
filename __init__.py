@@ -1,7 +1,7 @@
 from .cl_wrapper import *
 from .nodes import *
 
-# WEB_DIRECTORY = "./web"
+WEB_DIRECTORY = "./web"
 
 NODE_CLASS_MAPPINGS = {
     "BlenderValue": BlenderValue,

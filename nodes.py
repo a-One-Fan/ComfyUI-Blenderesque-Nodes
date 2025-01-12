@@ -243,14 +243,14 @@ class BlenderMapRange:
                 **FLOAT_INPUT("From Max Float", 1.0, -inf, inf),
                 **FLOAT_INPUT("To Min Float", 0.0, -inf, inf),
                 **FLOAT_INPUT("To Max Float", 1.0, -inf, inf),
-                **VECTOR_INPUT("Vector", 0.0, hidden_default=True),
+                **VECTOR_INPUT("Vector", 0.0),
                 **VECTOR_INPUT("From Min Vector", 0.0),
                 **VECTOR_INPUT("From Max Vector", 1.0),
                 **VECTOR_INPUT("To Min Vector", 0.0),
                 **VECTOR_INPUT("To Max Vector", 1.0),
                 **FLOAT_INPUT("Steps", 4.0, 0.00001, 1000000.0),
+                #"Test": ("FLOAT", {"default": 0.0, "step": 0.01, "min": -inf, "max": inf}),
             }
-            # TODO: Can dynamic optional inputs be done based on Mode selected?
         }
     
     @classmethod
@@ -266,8 +266,6 @@ class BlenderMapRange:
         dtype = kwargs["Data Type"]
         mode = kwargs["Interpolation Type"]
 
-        b_steps = BlenderData(kwargs, "Steps")
-
         if dtype == "Float":
             b_val = BlenderData(kwargs, "Value")
             b_frommin = BlenderData(kwargs, "From Min Float")
@@ -275,7 +273,7 @@ class BlenderMapRange:
             b_tomin = BlenderData(kwargs, "To Min Float")
             b_tomax = BlenderData(kwargs, "To Max Float")
             
-            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax, b_steps)
+            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
 
             val = b_val.as_float()
             frommin = b_frommin.as_float()
@@ -289,7 +287,7 @@ class BlenderMapRange:
             b_tomin = BlenderData(kwargs, "To Min Vector")
             b_tomax = BlenderData(kwargs, "To Max Vector")
             
-            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax, b_steps)
+            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
 
             val = b_val.as_rgb()
             frommin = b_frommin.as_rgb()
@@ -297,7 +295,10 @@ class BlenderMapRange:
             tomin = b_tomin.as_rgb()
             tomax = b_tomax.as_rgb()
 
-        steps = b_steps.as_float()
+        if(mode == "Stepped Linear"):
+            b_steps = BlenderData(kwargs, "Steps")
+            guess_canvas(b_val, b_steps)
+            steps = b_steps.as_float()
 
         # tomin - fac * tomin + fac * tomax = val
         # (tomax - tomin)*fac = val - tomin
@@ -327,7 +328,7 @@ class BlenderBlackbody:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                **FLOAT_INPUT("Temperature", 1500.0, 800.0, 12000.0),
+                **FLOAT_INPUT("Temperature", 1500.0, 800.0, 12000.0, 1.0),
             },
         }
     
