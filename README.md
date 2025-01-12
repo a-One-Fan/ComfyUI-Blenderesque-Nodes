@@ -1,12 +1,18 @@
 # ComfyUI-Blenderesque-Nodes
 Blender-like nodes for ComfyUI.<br>
 
+<h1>Work In Progress</h1>
+
+<img src=mary_combo.png style="width:50%;height:50%">
+
 Install:
 ```
-
+cd ./custom_nodes
+git clone
+pip install -r ./ComfyUI-Blendersque-Nodes/requirements.txt
 ```
 
-Usage:<br>
+Usage:<br><br>
 Nodes will accept most inputs, akin to Blender's implicit conversion between vectors, floats, colors, and image types thereof.<br>
 Nodes will output Blender-like data, and an image for general Comfy usage.<br>
 Blender's compositor works by storing every image at its original size, and resizing it via cropping/padding with black+1.0a to match that of I believe the first input. These nodes do so as well. Blender's compositor lacks an explicit canvas resize node, which can be a problem!<br>
@@ -22,10 +28,15 @@ Blender lacks some compositor-applicable shader nodes, so this list will also in
 Currently the list is incomplete.<br>
 
 <details>
-<summary>Meta Utility Nodes</summary>
+<summary>Meta/Bugs</summary>
 <ul>
-<li><span style="color:IndianRed">Resize Canvas ❌</span></li>
-<li><span style="color:IndianRed">Extract Data ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
+<li><span style="color:IndianRed">Dynamic inputs get disconnected on page refresh</span></li>
+<li><span style="color:IndianRed">Resize Canvas Node ❌</span></li>
+<li><span style="color:IndianRed">Extract Data Node ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
+<li><span style="color:IndianRed">Merged input sockets and default values ("widgets") ❌</span></li>
+<li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
+<li><span style="color:GoldenRod">Input hiding O (Does not remember links, odd resizing)</span></li>
+<li><span style="color:IndianRed">Sometimes mild float inaccuracy compared to Blender, probably wrong colorspace ❌</span></li>
 </ul>
 </details>
 
@@ -72,7 +83,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:GoldenRod">Combine Color O (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Combine XYZ ✔</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
-<li><span style="color:GoldenRod">Map Range O (Missing input hiding, interp methods untested)</span></li>
+<li><span style="color:LightGreen">Map Range ✔</span></li>
 <li><span style="color:IndianRed">Math ❌</span></li>
 <li><span style="color:IndianRed">Mix ❌</span></li>
 <li><span style="color:LightGreen">RGB to BW ✔</span></li>
