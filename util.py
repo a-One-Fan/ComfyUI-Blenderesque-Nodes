@@ -12,7 +12,7 @@ def tmix(t1, t2, fac):
         fac = fac.to(torch.float32)
     return t1*(1.0-fac) + t2*fac
 
-#blender/source/blender/blenlib/intern/math_color.cc
+#https://projects.blender.org/blender/blender/src/branch/main/source/blender/blenlib/intern/math_color.cc
 
 def rgb_to_hsv(rgb: torch.Tensor):
     r, g, b = rgb.split(1, dim=-1)
@@ -213,6 +213,8 @@ def yuv_to_rgb_primitive(r, g, b, colorspace=BLI_YUV_ITU_BT709):
 def ycc_to_rgb_primitive(r, g, b, colorspace=BLI_YCC_ITU_BT709):
     res = ycc_to_rgb(torch.Tensor((r, g, b)), colorspace=colorspace)
     return res[0], res[1], res[2]
+
+#https://projects.blender.org/blender/blender/src/branch/main/source/blender/imbuf/intern/colormanagement.cc
 
 blackbody_table_r = [[1.61919106e+03, -2.05010916e-03, 5.02995757e+00],
                             [2.48845471e+03, -1.11330907e-03, 3.22621544e+00],
