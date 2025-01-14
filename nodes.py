@@ -243,7 +243,7 @@ class BlenderMapRange:
                 **FLOAT_INPUT("From Max Float", 1.0, -inf, inf),
                 **FLOAT_INPUT("To Min Float", 0.0, -inf, inf),
                 **FLOAT_INPUT("To Max Float", 1.0, -inf, inf),
-                **VECTOR_INPUT("Vector", 0.0),
+                **VECTOR_INPUT("Vector", 0.0, hidden_default=True),
                 **VECTOR_INPUT("From Min Vector", 0.0),
                 **VECTOR_INPUT("From Max Vector", 1.0),
                 **VECTOR_INPUT("To Min Vector", 0.0),

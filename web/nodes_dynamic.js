@@ -55,15 +55,40 @@ function showWidget(widget) {
     }
 }
 
+function recalculateHeight(node) {
+    let totalHeight = 2;
+    for(let i=0; i<node.widgets.length; i++){
+        let size = 24;
+        size *= node.widgets[i].type != CONVERTED_TYPE
+        totalHeight += size;
+    } 
+    for(let i=0; i<node.inputs.length; i++){
+        totalHeight += 21;
+    }
+    node._size[1] = totalHeight;
+}
+
 // TODO: Better names?
 function __REMOVE_INPUT(obj, name){
-    obj.removeInput(obj.inputs.findIndex((i) => i.name === name));
+    let ii = obj.inputs.findIndex((i) => i.name == name);
+    let i = obj.inputs[ii];
+    // Do something
+}
+
+function __ADD_INPUT(obj, name, type=0){
+    let ii = obj.inputs.findIndex((i) => i.name == name);
+    let i = null;
+    if (ii == -1){
+        i = obj.addInput(name, type);
+    }else{
+        i = obj.inputs[ii];
+    }
 }
 
 function __REMOVE_WIDGET(obj, name){
     let w = obj.widgets.find((i) => i.name == name);
     if(w == null){
-        console.error("Could not find widget named ", name, obj);
+        return;
     }
     hideWidget(obj, w);
 }
@@ -72,7 +97,7 @@ function __ADD_WIDGET(obj, type, name, def, min, max, step, callback = () => {},
     if(type == "FLOAT"){
         type = "number";
     }
-    if(type == "BOOLEAN"){
+    if(["BOOLEAN", "BOOL"].includes(type)){
         type = "toggle";
     }
     let wi = obj.widgets.findIndex((w) => w.name == name);
@@ -82,11 +107,12 @@ function __ADD_WIDGET(obj, type, name, def, min, max, step, callback = () => {},
     }else{
         w = obj.widgets[wi];
         showWidget(w);
+        w.type = type;
     }
 }
 
 function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false){
-    obj.addInput(name, 0);
+    __ADD_INPUT(obj, name, 0);
     if (hidden_default){
         return;
     }
@@ -109,7 +135,7 @@ function REMOVE_COLOR_INPUT(obj, name, alpha=false){
 }
 
 function FLOAT_INPUT(obj, name, def=0.0, min=0.0, max=1.0, step=COLSTEP, hidden_default=false){
-    obj.addInput(name, 0);
+    __ADD_INPUT(obj, name, 0);
     if (hidden_default){
         return;
     }
@@ -122,7 +148,7 @@ function REMOVE_FLOAT_INPUT(obj, name){
 }
 
 function VECTOR_INPUT(obj, name, def=0.0, step=COLSTEP, min=-inf, max=inf, hidden_default=false){
-    obj.addInput(name, 0);
+    __ADD_INPUT(obj, name, 0);
     if (hidden_default){
         return;
     }
@@ -153,27 +179,8 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = await onNodeCreated?.apply(this);
 
-            REMOVE_FLOAT_INPUT(this, "Value");
-            REMOVE_FLOAT_INPUT(this, "From Min Float");
-            REMOVE_FLOAT_INPUT(this, "From Max Float");
-            REMOVE_FLOAT_INPUT(this, "To Min Float");
-            REMOVE_FLOAT_INPUT(this, "To Max Float");
-            
-            REMOVE_VECTOR_INPUT(this, "Vector");
-            REMOVE_VECTOR_INPUT(this, "From Min Vector");
-            REMOVE_VECTOR_INPUT(this, "From Max Vector");
-            REMOVE_VECTOR_INPUT(this, "To Min Vector");
-            REMOVE_VECTOR_INPUT(this, "To Max Vector");
-
-            REMOVE_FLOAT_INPUT(this, "Steps");
-
-            let last_widgetval_dtype = "Float";
             this.widgets.find((w) => w.name == "Data Type").callback = 
                 (widgetval) => {
-                    if(last_widgetval_dtype == widgetval){
-                        return;
-                    }
-                    last_widgetval_dtype = widgetval;
                     if(widgetval == "Float"){
                         REMOVE_VECTOR_INPUT(this, "Vector");
                         REMOVE_VECTOR_INPUT(this, "From Min Vector");
@@ -193,44 +200,39 @@ app.registerExtension({
                         REMOVE_FLOAT_INPUT(this, "To Min Float");
                         REMOVE_FLOAT_INPUT(this, "To Max Float");
 
-                        VECTOR_INPUT(this, "Vector");
+                        VECTOR_INPUT(this, "Vector", 0.0, COLSTEP, -inf, inf, true);
                         VECTOR_INPUT(this, "From Min Vector");
                         VECTOR_INPUT(this, "From Max Vector");
                         VECTOR_INPUT(this, "To Min Vector");
                         VECTOR_INPUT(this, "To Max Vector");
                     }
-                }
-
-            const interptypes = ["Linear", "Stepped Linear", "Smooth Step", "Smoother Step"];
-            const interptypes_clamp = ["Linear", "Stepped Linear"];
-            let last_widgetval_interptype = 0;
-            this.widgets.find((w) => w.name == "Interpolation Type").callback = 
-                (widgetval) => {
-                    if(interptypes_clamp.includes(last_widgetval_interptype) != interptypes_clamp.includes(widgetval)){
-                        if(interptypes_clamp.includes(widgetval)){
-                            __ADD_WIDGET(this, "BOOLEAN", "Clamp", true);
-                        }else{
-                            __REMOVE_WIDGET(this, "Clamp");
-                        }
-                    }
-
-                    if(last_widgetval_interptype != widgetval){
-                        if(widgetval == 1){
-                            __ADD_WIDGET(this, "BOOLEAN", "Clamp", true);
-                        }else{
-                            if(last_widgetval_interptype == 1){
-                                __REMOVE_WIDGET(this, "Clamp");
-                            }
-                        }
-                    }
-                    last_widgetval_interptype = widgetval;
+                    this.graph.setDirtyCanvas(true);
+                    recalculateHeight(this);
                 }
             
-            FLOAT_INPUT(this, "Value");
-            FLOAT_INPUT(this, "From Min Float");
-            FLOAT_INPUT(this, "From Max Float");
-            FLOAT_INPUT(this, "To Min Float");
-            FLOAT_INPUT(this, "To Max Float");
+            let w = this.widgets.find((w) => w.name == "Data Type");
+            w.callback(w.value);
+
+            this.widgets.find((w) => w.name == "Interpolation Type").callback = 
+                (widgetval) => {
+                    if(["Linear", "Stepped Linear"].includes(widgetval)){
+                        __ADD_WIDGET(this, "BOOLEAN", "Clamp", true);
+                    }else{
+                        __REMOVE_WIDGET(this, "Clamp");
+                    }
+
+                    if(widgetval == "Stepped Linear"){
+                        FLOAT_INPUT(this, "Steps", 4.0, 0.0);
+                    }else{
+                        REMOVE_FLOAT_INPUT(this, "Steps");
+                    }
+
+                    this.graph.setDirtyCanvas(true);
+                    recalculateHeight(this);
+                }
+                
+            w = this.widgets.find((w) => w.name == "Interpolation Type");
+            w.callback(w.value);
 
             return me;
         }
