@@ -29,15 +29,13 @@ class BlenderData:
                 self.image = join_rgba(any, paramname)
             else:
                 self.image = any
-                if self.image.size()[3] in [3, 4]:
+                if self.image.size()[3] in [2, 3, 4]:
                     if self.image.size()[3] == 3:
                         self.image = color_transform(self.image)
-                    else:
-                        size_cut = list(self.image.size())[:-1]
-                        mask = torch.cat(torch.full(size_cut + [3], 1.0), 
-                                         torch.full(size_cut + [1], 0.0),
-                                         dim = -1)
-                        self.image = color_transform(any) * mask + any * (1.0 - mask)
+                    elif self.image.size()[3] == 4:
+                        rgb, a = self.image.split([3, 1], dim=-1)
+                        rgb = color_transform(rgb)
+                        self.image = torch.cat((rgb, a), dim=-1)
             self.canvas = (self.image.size()[1], self.image.size()[2])
 
         elif type(any) == dict:
@@ -66,7 +64,7 @@ class BlenderData:
             
         elif type(any) in [tuple, list, float, int]:
             if type(any) in [tuple, list]:
-                if not len(any) in [3, 4]:
+                if not len(any) in [2, 3, 4]:
                     raise Exception(F"Can not convert {len(any)}-elemnt tuple/list to Blender data!")
                 
             self.value = any
@@ -83,6 +81,27 @@ class BlenderData:
             print(f"Interp: {mode}, {self.image.size()}, {canvas}")
             self.image = functional.interpolate(self.image, [self.image.size()[0], canvas[0], canvas[1], self.image.size()[3]], mode=mode)
 
+    def as_2wide(self, batch=1) -> torch.Tensor:
+        """
+        Interpret as a [batch, canvas x, canvas y, 2] tensor
+        """
+
+        size = (batch, self.canvas[0], self.canvas[1])
+
+        if not self.image:
+            if type(self.value) in [list, tuple]:
+                return torch.stack((torch.full(size, self.value[0]), torch.full(size, self.value[1])), dim=-1)
+            return torch.full((*size, 2), self.value)
+        
+        if self.image.size()[3] == 2:
+            return self.image
+        
+        if self.image.size()[3] == 1:
+            return torch.cat((self.image, self.image), dim=-1)
+        
+        return self.image.split([2, self.image.size()[3]-2], dim=-1)[0]
+
+
     def as_rgba(self, batch=1) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 4] tensor"""
         size = (batch, self.canvas[0], self.canvas[1])
@@ -98,6 +117,8 @@ class BlenderData:
         
         if self.image.size()[3] == 1:
             return torch.cat((self.image, self.image, self.image, torch.ones(*size, 1)), dim=-1)
+        if self.image.size()[3] == 2:
+            return torch.cat((self.image, torch.zeros((*size, 1)), torch.ones((*size, 1))), dim=-1)
         if self.image.size()[3] == 3:
             return torch.cat((self.image, torch.ones((*size, 1))), dim=-1)
         if self.image.size()[3] == 4:

@@ -3,6 +3,7 @@ import torch.nn.functional as functional
 
 from .nodes_base import *
 from .util import *
+from .cl_wrapper import *
 
 # Image: batch, x, y, channels
 
@@ -666,3 +667,210 @@ class BlenderSetAlpha:
         
         b_res = BlenderData(col, new_alpha)
         return (b_res, b_res.as_out())
+    
+FILTERS = ["Nearest", "Bilinear", "Bicubic"]
+EXTENSIONS = ["Clip", "Repeat", "Extend", "Mirror"]
+
+class BlenderRotate:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Filter": (FILTERS, ),
+                "Extension": (EXTENSIONS, ),
+                **FLOAT_INPUT("Rotation", 0.0, -360.0, 360.0, 2.0),
+                **COLOR_INPUT("Color", 1.0, True),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "rotate"
+    CATEGORY = "Blender/Transform"
+    
+    def rotate(self, **kwargs):
+        filter = kwargs["Filter"]
+        ext = kwargs["Extension"]
+
+        b_loc = BlenderData((0.0, 0.0))
+        if not kwargs.get("Rotation"):
+            kwargs["RotationF"] *= PI/180
+        b_rot = BlenderData(kwargs, "Rotation")
+        b_scale = BlenderData((1.0, 1.0))
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col, b_loc, b_rot, b_scale)
+        
+        loc = b_loc.as_2wide()
+        rot = b_rot.as_float()
+        scale = b_scale.as_2wide()
+
+        col = b_col.as_rgba()
+
+        locrotscale = torch.cat((loc, rot, scale), dim=-1)
+
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        b_r = BlenderData(res)
+        
+        return (b_r, b_r.as_out(), )
+    
+class BlenderScale:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Filter": (FILTERS, ),
+                "Extension": (EXTENSIONS, ),
+                **COLOR_INPUT("Color", 1.0, True),
+                **FLOAT_INPUT("X", 1.0, -inf, inf),
+                **FLOAT_INPUT("Y", 1.0, -inf, inf),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "scale"
+    CATEGORY = "Blender/Transform"
+    
+    def scale(self, **kwargs):
+        filter = kwargs["Filter"]
+        ext = kwargs["Extension"]
+
+        b_loc = BlenderData((0.0, 0.0))
+        b_rot = BlenderData(0.0)
+        b_scale_x = BlenderData(kwargs, "X")
+        b_scale_y = BlenderData(kwargs, "Y")
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col, b_loc, b_rot, b_scale_x, b_scale_y)
+        
+        loc = b_loc.as_2wide()
+        rot = b_rot.as_float()
+        scale_x = b_scale_x.as_float()
+        scale_y = b_scale_y.as_float()
+
+        col = b_col.as_rgba()
+
+        locrotscale = torch.cat((loc, rot, scale_x, scale_y), dim=-1)
+
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        b_r = BlenderData(res)
+        
+        return (b_r, b_r.as_out(), )
+    
+class BlenderTranslate:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Filter": (FILTERS, ),
+                "Extension": (EXTENSIONS, ),
+                "Relative": ("BOOLEAN", {"default": False}),
+                **COLOR_INPUT("Color", 1.0, True),
+                **FLOAT_INPUT("X", 1.0, -inf, inf),
+                **FLOAT_INPUT("Y", 1.0, -inf, inf),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "translate"
+    CATEGORY = "Blender/Transform"
+    
+    def translate(self, **kwargs):
+        filter = kwargs["Filter"]
+        ext = kwargs["Extension"]
+
+        b_loc_x = BlenderData(kwargs, "X")
+        b_loc_y = BlenderData(kwargs, "Y")
+        b_rot = BlenderData(0.0)
+        b_scale = BlenderData((1.0, 1.0))
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col, b_loc_x, b_loc_y, b_rot, b_scale)
+        
+        loc_x = b_loc_x.as_float()
+        loc_y = b_loc_y.as_float()
+        rot = b_rot.as_float()
+        scale = b_scale.as_2wide()
+
+        col = b_col.as_rgba()
+
+        locrotscale = torch.cat((loc_x, loc_y, rot, scale), dim=-1)
+
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        b_r = BlenderData(res)
+        
+        return (b_r, b_r.as_out(), )
+
+class BlenderTransform:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Filter": (FILTERS, ),
+                "Extension": (EXTENSIONS, ),
+                **COLOR_INPUT("Color", 1.0, True),
+                **FLOAT_INPUT("X", 0.0, -inf, inf),
+                **FLOAT_INPUT("Y", 0.0, -inf, inf),
+                **FLOAT_INPUT("Rotation", 0.0, -360.0, 360.0, 2.0),
+                **FLOAT_INPUT("Scale", 1.0, -inf, inf),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "rotate"
+    CATEGORY = "Blender/Transform"
+    
+    def rotate(self, **kwargs):
+        filter = kwargs["Filter"]
+        ext = kwargs["Extension"]
+
+        b_loc_x = BlenderData(kwargs, "X")
+        b_loc_y = BlenderData(kwargs, "Y")
+        if not kwargs.get("Rotation"):
+            kwargs["RotationF"] *= PI/180
+        b_rot = BlenderData(kwargs, "Rotation")
+        b_scale = BlenderData(kwargs, "Scale")
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col, b_loc_x, b_loc_y, b_rot, b_scale)
+        
+        loc_x = b_loc_x.as_float()
+        loc_y = b_loc_y.as_float()
+        rot = b_rot.as_float()
+        scale = b_scale.as_2wide()
+
+        col = b_col.as_rgba()
+
+        locrotscale = torch.cat((loc_x, loc_y, rot, scale), dim=-1)
+
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        b_r = BlenderData(res)
+        
+        return (b_r, b_r.as_out(), )

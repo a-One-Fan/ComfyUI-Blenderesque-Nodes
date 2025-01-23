@@ -30,6 +30,18 @@ NODE_CLASS_MAPPINGS = {
     "BlenderSeparateXYZ": BlenderSeparateXYZ,
     #"BlenderVectorMath": BlenderVectorMath,
     "BlenderWavelength": BlenderWavelength,
+
+    "BlenderRotate": BlenderRotate,
+    "BlenderScale": BlenderScale,
+    "BlenderTransform": BlenderTransform,
+    "BlenderTranslate": BlenderTranslate,
+    #"BlenderCrop": BlenderCrop,
+    #"BlenderCornerPin": BlenderCornerPin,
+    #"BlenderDisplace": BlenderDisplace,
+    #"BlenderFlip": BlenderFlip,
+    #"BlenderMapUV": BlenderMapUV,
+    #"BlenderLensDistortion": BlenderLensDistortion,
+    #"BlenderMovieDistortion": BlenderMovieDistortion,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -59,4 +71,16 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BlenderSeparateXYZ": "Separate XYZ",
     #"BlenderVectorMath": "Vector Math",
     "BlenderWavelength": "Wavelength",
+
+    "BlenderRotate": "Rotate",
+    "BlenderScale": "Scale",
+    "BlenderTransform": "Transform",
+    "BlenderTranslate": "Translate",
+    #"BlenderCrop": "Crop",
+    #"BlenderCornerPin": "Corner Pin",
+    #"BlenderDisplace": "Displace",
+    #"BlenderFlip": "Flip",
+    #"BlenderMapUV": "Map UV",
+    #"BlenderLensDistortion": "Lens Distortion",
+    #"BlenderMovieDistortion": "Movie Distortion",
 }
