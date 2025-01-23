@@ -317,7 +317,7 @@ class BlenderMapRange:
         if kwargs["Clamp"]:
             res = torch.clamp(res, tomin, tomax)
 
-        b_r = BlenderData(res, no_colortransform=True)
+        b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
     
@@ -350,7 +350,7 @@ class BlenderBlackbody:
 
         res = blackbody_temperature_to_rec709(fac) # TODO: rec709 -> linear?
         
-        b_res = BlenderData(res, no_colortransform=True)
+        b_res = BlenderData(res)
         return (b_res, b_res.as_out())
     
 class BlenderWavelength:
@@ -380,9 +380,9 @@ class BlenderWavelength:
 
         fac = b_fac.as_float()
 
-        res = wavelength_to_xyz(fac)
+        res = ciexyz_to_rgb(wavelength_to_xyz(fac))
         
-        b_res = BlenderData(res, no_colortransform=True)
+        b_res = BlenderData(res)
         return (b_res, b_res.as_out())
     
 class BlenderRGBtoBW:
@@ -435,7 +435,7 @@ class BlenderSeparateXYZ:
     CATEGORY = "Blender/Converter"
 
     def separate_xyz(self, **kwargs):
-        b_vec = BlenderData(kwargs, "Vector", no_colortransform=True)
+        b_vec = BlenderData(kwargs, "Vector")
         guess_canvas(b_vec)
         
         xyz = b_vec.as_rgb()
@@ -474,7 +474,7 @@ class BlenderCombineXYZ:
 
         x, y, z = b_x.as_float(), b_y.as_float(), b_z.as_float()
         
-        b_res = BlenderData(torch.cat((x, y, z), dim=-1), no_colortransform=True)
+        b_res = BlenderData(torch.cat((x, y, z), dim=-1))
         return (b_res, b_res.as_out())
     
 class BlenderClamp:
@@ -845,10 +845,10 @@ class BlenderTransform:
     
     RETURN_TYPES = (*BLENDER_OUTPUT(), )
     RETURN_NAMES = ("Image", "Image", )
-    FUNCTION = "rotate"
+    FUNCTION = "transform"
     CATEGORY = "Blender/Transform"
     
-    def rotate(self, **kwargs):
+    def transform(self, **kwargs):
         filter = kwargs["Filter"]
         ext = kwargs["Extension"]
 

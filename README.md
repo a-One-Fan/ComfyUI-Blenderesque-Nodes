@@ -91,7 +91,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:GoldenRod">Separate Color O (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Separate XYZ ✔</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
-<li><span style="color:GoldenRod">Wavelength O (Not accurate)</span></li>
+<li><span style="color:LightGreen">Wavelength ✔</span></li>
 </ul>
 </details>
 

@@ -16,6 +16,12 @@ def tmix(t1, t2, fac):
 
 #https://projects.blender.org/blender/blender/src/branch/main/source/blender/blenlib/intern/math_color.cc
 
+def rgb_to_srgb(rgb: torch.Tensor):
+    return torch.pow(rgb, 1/2.2)
+
+def srgb_to_rgb(srgb: torch.Tensor):
+    return torch.pow(srgb, 2.2)
+
 def rgb_to_hsv(rgb: torch.Tensor):
     r, g, b = rgb.split(1, dim=-1)
 
@@ -312,7 +318,7 @@ cie_color_match = [
 cie_color_match_emb = nn.Embedding.from_pretrained(torch.Tensor(cie_color_match))
 
 def wavelength_to_xyz(lambda_nm):
-    ii = (lambda_nm - 380.0) * (torch.ones_like(lambda_nm) / 5.0) # Scaled 0..80. 
+    ii = (lambda_nm - 380.0) / 5.0 # Scaled 0..80.
     ii_ori = ii
     ii = torch.clamp(ii, 0, 79)
     i = torch.floor(ii).to(torch.int)
@@ -332,3 +338,13 @@ def wavelength_to_xyz(lambda_nm):
     tmix(tmix(xyz, 0.0, ii_ori < 0), 0.0, ii_ori >= 80)
 
     return xyz
+
+def ciexyz_to_rgb(xyz):
+    xyz_cf = xyz.permute((3, 1, 2, 0))
+    x, y, z = (xyz_cf[0], xyz_cf[1], xyz_cf[2])
+    r =  3.2404542 * x + -1.5371385 * y + -0.4985314 * z
+    g = -0.9692660 * x + 1.8760108  * y + 0.0415560  * z
+    b =  0.0556434 * x + -0.2040259 * y + 1.0572252  * z
+    rgb_cf = torch.stack((r, g, b), dim=0)
+    rgb = rgb_cf.permute((3, 1, 2, 0))
+    return rgb

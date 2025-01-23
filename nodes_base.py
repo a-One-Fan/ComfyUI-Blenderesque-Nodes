@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as functional
+from .util import *
 
 DEFAULT_CANVAS = (64, 64)
 
@@ -7,13 +8,23 @@ class BlenderData:
     image: torch.Tensor | None
     canvas: tuple[int, int] | None
     value: tuple | float | int | None
-    def __init__(self, any, paramname: str | torch.Tensor | None = None, no_colortransform = False):
+    def __init__(self, any, paramname: str | torch.Tensor | None = None, colortransform = None):
         """Create from sRGB Image tensor (1, 3 or 4 channels), 2 tensors (3 channels + 1 channel), int, float or 3/4-wide tuple of int/float"""
 
+        if colortransform == None:
+            if type(paramname) == str:
+                if any.get(paramname + "R", None) != None:
+                    colortransform = True # No syntactic diabetes!
+                if any.get(paramname, None) != None:
+                    t = any[paramname]
+                    if type(t) is torch.Tensor:
+                        if t.size()[3] in [3, 4]:
+                            colortransform = True
+
         def color_transform(te):
-            if no_colortransform:
+            if not colortransform:
                 return te
-            return torch.pow(te, 2.2)
+            return srgb_to_rgb(te)
 
         self.image = None
         self.canvas = None
@@ -136,7 +147,7 @@ class BlenderData:
         else:
             res = self.as_rgba(batch)
         
-        return torch.pow(res, 1/2.2) # sRGB
+        return rgb_to_srgb(res)
 
     def as_rgb_a(self, batch=1) -> tuple[torch.Tensor, torch.Tensor]:
         """Interpret as ([batch, canvas x, canvas y, 3], [batch, canvas x, canvas y, 1]) tensors"""
