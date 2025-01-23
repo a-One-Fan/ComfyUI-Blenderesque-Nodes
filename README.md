@@ -31,6 +31,7 @@ Currently the list is incomplete.<br>
 <summary>Meta/Bugs</summary>
 <ul>
 <li><span style="color:IndianRed">Dynamic inputs get disconnected on page refresh</span></li>
+<li><span style="color:IndianRed">UV Node</span></li>
 <li><span style="color:IndianRed">Resize Canvas Node ❌</span></li>
 <li><span style="color:IndianRed">Extract Data Node ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
 <li><span style="color:IndianRed">Merged input sockets and default values ("widgets") ❌</span></li>
@@ -97,10 +98,10 @@ Most other input nodes seem redundant or not applicable.
 <details>
 <summary>Transform</summary>
 <ul>
-<li><span style="color:IndianRed">Rotate ❌</span></li>
-<li><span style="color:IndianRed">Scale ❌</span></li>
-<li><span style="color:IndianRed">Transform ❌</span></li>
-<li><span style="color:IndianRed">Translate ❌</span></li>
+<li><span style="color:GoldenRod">Rotate O (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Scale O (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Transform O (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Translate O (No bicubic interpolation)</span></li>
 <li><span style="color:IndianRed">Corner Pin ❌</span></li>
 <li><span style="color:IndianRed">Crop ❌</span></li>
 <li><span style="color:IndianRed">Displace ❌</span></li>
@@ -110,3 +111,36 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Movie Distortion ❌</span></li>
 </ul>
 </details>
+
+<details>
+<summary>Texture</summary>
+<ul>
+<li><span style="color:IndianRed"> Brick Texture ❌</span></li>
+<li><span style="color:IndianRed"> Checker Texture ❌</span></li>
+<li><span style="color:IndianRed"> Gabor Texture ❌</span></li>
+<li><span style="color:IndianRed"> Gradient Texture ❌</span></li>
+<li><span style="color:IndianRed"> Magic Texture ❌</span></li>
+<li><span style="color:IndianRed"> Noise Texture ❌</span></li>
+<li><span style="color:IndianRed"> Voronoi Texture ❌</span></li>
+<li><span style="color:IndianRed"> Wave Texture ❌</span></li>
+<li><span style="color:IndianRed"> White Noise Texture ❌</span></li>
+</ul>
+</details>
+
+<details>
+<summary>Filter</summary>
+<ul>
+<li><span style="color:IndianRed"> Whatever blurs I can implement ❌</span></li>
+<li><span style="color:IndianRed"> Anti-Aliasing ❌</span></li>
+<li><span style="color:IndianRed"> Despeckle ❌</span></li>
+<li><span style="color:IndianRed"> Dilate/Erode ❌</span></li>
+<li><span style="color:IndianRed"> Filter FIlter :) ❌</span></li>
+<li><span style="color:IndianRed"> Glare ❌</span></li>
+<li><span style="color:IndianRed"> Kuwahara ❌</span></li>
+<li><span style="color:IndianRed"> Pixelate ❌</span></li>
+<li><span style="color:IndianRed"> Posterize ❌</span></li>
+<li><span style="color:IndianRed"> Sun Beams ❌</span></li>
+</ul>
+</details>
+
+Implemented nodes: 20/56
