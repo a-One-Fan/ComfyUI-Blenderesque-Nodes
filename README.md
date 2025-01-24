@@ -9,7 +9,7 @@ Nodes might change and you will need to redo your workflow</h1>
 Install:
 ```
 cd ./custom_nodes
-git clone
+git clone https://github.com/a-One-Fan/ComfyUI-Blenderesque-Nodes
 pip install -r ./ComfyUI-Blendersque-Nodes/requirements.txt
 ```
 
