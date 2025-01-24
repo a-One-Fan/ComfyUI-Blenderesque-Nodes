@@ -1004,3 +1004,143 @@ class BlenderMix:
             b_res = BlenderData(res, a_alpha)
 
         return (b_res, b_res.as_out(), )
+    
+class BlenderMath:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Operation": (["Add", "Subtract", "Multiply", "Divide", "Multiply Add", 
+                               "Power", "Logarithm", "Square Root", "Inverse Square Root", "Absolute", "Exponent",
+                               "Minimum", "Maximum", "Less Than", "Greater Than", "Sign", "Compare", "Smooth Minimum", "Smooth Maximum",
+                               "Round", "Floor", "Ceil", "Truncate", 
+                               "Fraction", "Truncated Modulo", "Floored Modulo", "Wrap", "Snap", "Ping-Pong", 
+                               "Sine", "Cosine", "Tangent", "Arcsine", "Arccosine", "Arctangent", "Arctan2", 
+                               "Hyperbolic Sine", "Hyperbolic Cosine", "Hyperbolic Tangent",
+                               "To Radians", "To Degrees"], ),
+                "Clamp": ("BOOLEAN", {"default": False}),
+                **FLOAT_INPUT("A", 0.0, -inf, inf),
+                **FLOAT_INPUT("B", 0.0, -inf, inf),
+                **FLOAT_INPUT("C", 0.0, -inf, inf),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "math"
+    CATEGORY = "Blender/Converter"
+
+    def math(self, **kwargs):
+        clamp = kwargs["Clamp"]
+        op = kwargs["Operation"]
+
+        b_a = BlenderData(kwargs, "A")
+        b_b = BlenderData(kwargs, "B")
+        b_c = BlenderData(kwargs, "C")
+        guess_canvas(b_a, b_b, b_c)
+
+        a, b, c = b_a.as_float(), b_b.as_float(), b_c.as_float()
+
+        if op == "Add":
+            res = a + b
+        elif op == "Subtract":
+            res = a - b
+        elif op == "Multiply":
+            res = a * b
+        elif op == "Divide": #TODO: Divide by (near) zero should result in 0 to match Blender? Investigate
+            res = a / b
+        elif op == "Multiply Add":
+            res = a * b + c
+        
+        elif op == "Power":
+            res = torch.pow(a, b)
+        elif op == "Logarithm":
+            res = torch.log(a) / torch.log(b)
+        elif op == "Square Root":
+            res = torch.sqrt(a)
+        elif op == "Inverse Square Root":
+            res = 1.0/torch.sqrt(a) # TODO: more precise variant?
+        elif op == "Absolute":
+            res = torch.abs(a)
+        elif op == "Exponent":
+            res = torch.exp(a)
+        
+        elif op == "Minimum":
+            res = torch.minimum(a, b)
+        elif op == "Maximum":
+            res = torch.maximum(a, b)
+        elif op == "Less Than":
+            res = (a < b).to(torch.float32)
+        elif op == "Greater Than":
+            res = (a > b).to(torch.float32)
+        elif op == "Sign":
+            res = tmix(tmix(-1.0, 0.0, a == 0.0), 1.0, a > 0.0)
+        elif op == "Compare":
+            res = (torch.abs(a-b) < c).to(torch.float32)
+        elif op == "Smooth Minimum": # TODO: Does not match Blender
+            res = (a + b + torch.sqrt((a - b) * (a - b) + c))/2.0
+        elif op == "Smooth Maximum": # TODO: Does not match Blender
+            res = (a + b + torch.sqrt((a + b) * (a + b) + c))/2.0
+        
+        elif op == "Round":
+            res = torch.round(a)
+        elif op == "Floor":
+            res = torch.floor(a)
+        elif op == "Ceil":
+            res = torch.ceil(a)
+        elif op == "Truncate":
+            res = torch.trunc(a)
+        elif op == "Fraction":
+            res = a - torch.floor(a)
+        elif op == "Truncated Modulo":
+            res = a - torch.trunc(a / b) * b
+        elif op == "Floored Modulo":
+            res = a % b
+        elif op == "Wrap": # blender/source/blender/nodes/shader/nodes/node_shader_math.cc -> line 312
+            range = b - c
+            if_branch = a - (range * ((a - c) / range).floor())
+            res = tmix(if_branch, c, range == 0.0)
+        elif op == "Snap":
+            res = torch.floor(a / b) * b
+        elif op == "Ping-Pong":
+            res = torch.abs((a + b) % (b * 2) - b)
+        
+        elif op == "Sine":
+            res = torch.sin(a)
+        elif op == "Cosine":
+            res = torch.cos(a)
+        elif op == "Tangent":
+            res = torch.tan(a)
+        elif op == "Arcsine":
+            res = torch.arcsin(a)
+        elif op == "Arccosine":
+            res = torch.arccos(a)
+        elif op == "Arctangent":
+            res = torch.arctan(a)
+        elif op == "Arctan2":
+            res = torch.arctan2(a, b)
+        elif op == "Hyperbolic Sine":
+            res = torch.sinh(a)
+        elif op == "Hyperbolic Cosine":
+            res = torch.cosh(a)
+        elif op == "Hyperbolic Tangent":
+            res = torch.tanh(a)
+        
+        elif op == "To Radians":
+            res = a * (PI / 180)
+        elif op == "To Degrees":
+            res = a * (180 / PI)
+
+        if clamp:
+            res = torch.clamp(res, 0.0, 1.0)
+
+        b_res = BlenderData(res)
+
+        return (b_res, b_res.as_out(), )

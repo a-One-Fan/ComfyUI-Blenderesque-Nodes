@@ -85,9 +85,12 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Combine XYZ ✔</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
 <li><span style="color:LightGreen">Map Range ✔</span></li>
-<li><span style="color:IndianRed">Math ❌</span></li>
+<li><span style="color:GoldenRod">Math O</span></li>
+No dynamic inputs, the following operations do not work correctly: Smooth Minimum, Smooth Maximum<br>
+Divide does not handle division by 0 as Blender
 <li><span style="color:GoldenRod">Mix O</span></li>
-No dynamic inputs, no non-uniform vector factor, the following blending modes do not work correctly: Overlay, Soft Light, Linear Light; Divide is close but does not match 1:1 in some cases
+No dynamic inputs, no non-uniform vector factor, the following blending modes do not work correctly: Overlay, Soft Light, Linear Light<br>
+Divide does not handle division by 0 as Blender
 <li><span style="color:LightGreen">RGB to BW ✔</span></li>
 <li><span style="color:GoldenRod">Separate Color O (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Separate XYZ ✔</span></li>
@@ -144,4 +147,4 @@ No dynamic inputs, no non-uniform vector factor, the following blending modes do
 </ul>
 </details>
 
-Implemented nodes: 21/56
+Implemented nodes: 22/56
