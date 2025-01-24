@@ -1,7 +1,8 @@
 # ComfyUI-Blenderesque-Nodes
 Blender-like nodes for ComfyUI.<br>
 
-<h1>Work In Progress</h1>
+<h1>Work In Progress<br>
+Nodes might change and you will need to redo your workflow</h1>
 
 <img src=mary_combo.png style="width:50%;height:50%">
 
@@ -15,8 +16,8 @@ pip install -r ./ComfyUI-Blendersque-Nodes/requirements.txt
 Usage:<br><br>
 Nodes will accept most inputs, akin to Blender's implicit conversion between vectors, floats, colors, and image types thereof.<br>
 Nodes will output Blender-like data, and an image for general Comfy usage.<br>
-Blender's compositor works by storing every image at its original size, and resizing it via cropping/padding with black+1.0a to match that of I believe the first input. These nodes do so as well. Blender's compositor lacks an explicit canvas resize node, which can be a problem!<br>
-You should prefer to use the Blender data, to reduce loss in precision from excessive colorspace transforms, or avoid very small images inteded for a simple preview, among other things.<br>
+Differently sized images are automatically cropped/padded like Blender's compositor.
+You should prefer to use the Blender-like data output between these nodes, to reduce loss in precision from excessive colorspace transforms, or avoid very small images inteded for a simple preview, among other possible issues.<br>
 
 Currently implemented nodes:<br>
 <span style="color:LightGreen">Green with ✔</span> = Implemented<br>
@@ -30,13 +31,13 @@ Currently the list is incomplete.<br>
 <details>
 <summary>Meta/Bugs/TODO</summary>
 <ul>
-<li><span style="color:IndianRed">Dynamic inputs get disconnected on page refresh</span></li>
-<li><span style="color:IndianRed">UV Node</span></li>
+<li><span style="color:IndianRed">Dynamic inputs ❌</span></li>
+<li><span style="color:GoldenRod">Dynamic widgets O</span></li>
+<li><span style="color:IndianRed">UV Input Node ❌ (For mapping textures)</span></li>
 <li><span style="color:IndianRed">Resize Canvas Node ❌</span></li>
 <li><span style="color:IndianRed">Extract Data Node ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
 <li><span style="color:IndianRed">Merged input sockets and default values ("widgets") ❌</span></li>
 <li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
-<li><span style="color:GoldenRod">Input hiding O (Not quite there yet)</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
 </ul>
 </details>
