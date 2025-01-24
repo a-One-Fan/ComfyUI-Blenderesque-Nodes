@@ -164,15 +164,67 @@ function REMOVE_VECTOR_INPUT(obj, name){
     __REMOVE_WIDGET(obj, name+"Z");
 }
 
-const PREFIX = 'blenderesque_dynamic_inputs.'
+const PREFIX = "blenderesque_dynamic_inputs.";
 
 const MAPRANGE = "BlenderMapRange";
+
+const NODES_INPUT = ["BlenderValue", "BlenderRGB"];
+const NODES_COLOR = ["BlenderBrightnessContrast", "BlenderGamma", "BlenderHueSaturationValue", "BlenderInvertColor", 
+    "BlenderExposure", "BlenderTonemap", "BlenderAlphaOver", "BlenderZCombine", "BlenderAlphaConvert", "BlenderConvertColorspace",
+    "BlenderSetAlpha",
+];
+const NODES_CONVERTER = ["BlenderBlackbody", "BlenderClamp", "BlenderCombineColor", "BlenderCombineXYZ", "BlenderMapRange", 
+    "BlenderMath", "BlenderMix", "BlenderRGBtoBW", "BlenderSeparateColor", "BlenderSeparateXYZ", "BlenderVectorMath", "BlenderWavelength",
+];
+const NODES_TRANSFORM = ["BlenderRotate", "BlenderScale", "BlenderTransform", "BlenderTranslate", "BlenderCornerPin", "BlenderCrop",
+    "BlenderDisplace", "BlenderFlip", "BlenderMapUV", "BlenderLensDistortion", "BlenderMovieDistortion",
+];
+const NODES_TEXTURE = ["BlenderBrickTexture", "BlenderCheckerTexture", "BlenderGaborTexture", "BlenderGradientTexture", "BlenderMagicTexture",
+    "BlenderNoiseTexture", "BlenderVoronoiTexture", "BlenderWaveTexture", "BlenderWhiteNoiseTexture",
+];
+const NODES_FILTER = ["BlenderBlur", "BlenderAntiAliasing", "BlenderDespeckle", "BlenderDilateErode", "BlenderFilter", "BlenderGlare", 
+    "BlenderKuwahara", "BlenderPixelate", "BlenderPosterize", "BlenderSunBeams"
+];
+
+const NODES_ALL = [ {nodes: NODES_INPUT, color: "#83314A"}, {nodes: NODES_COLOR, color: "#6E6E1D"}, {nodes: NODES_CONVERTER, color: "#246283"},
+    {nodes: NODES_TRANSFORM, color: "#3B5959"}, {nodes: NODES_TEXTURE, color: "#79461D"}, {nodes: NODES_FILTER, color: "#3F2750"},
+];
+
+function find_blender_node(name){
+    for(let i=0; i<NODES_ALL.length; i++){
+        for(let j=0; j<NODES_ALL[i].nodes.length; j++){
+            if (name == NODES_ALL[i].nodes[j]){
+                return [i, j];
+            }
+        }
+    }
+
+    return null;
+}
+
+function blender_node_color(name){
+    let indices = find_blender_node(name);
+    return NODES_ALL[indices[0]].color;
+}
 
 app.registerExtension({
 	name: PREFIX + MAPRANGE,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+
+        if (find_blender_node(nodeData.name) != null){
+            const onNodeCreatedPrev = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = async function () {
+                const me = await onNodeCreatedPrev?.apply(this);
+                this.color = blender_node_color(nodeData.name);
+                this.bgcolor = "#303030";
+                this.boxcolor = "#DDDDDD";
+                this.constructor.title_text_color = "#E8E8E8";
+                return me;
+            }
+        }
+
         if (nodeData.name !== MAPRANGE) {
-            return
+            return;
         }
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
