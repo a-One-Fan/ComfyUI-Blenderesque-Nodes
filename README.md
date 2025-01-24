@@ -20,10 +20,10 @@ Differently sized images are automatically cropped/padded like Blender's composi
 You should prefer to use the Blender-like data output between these nodes, to reduce loss in precision from excessive colorspace transforms, or avoid very small images inteded for a simple preview, among other possible issues.<br>
 
 Currently implemented nodes:<br>
-<span style="color:LightGreen">Green with ✔</span> = Implemented<br>
-<span style="color:IndianRed">Red with ❌</span> = Not implemented<br>
-<span style="color:DimGrey">Dark grey with -</span> = Probably won't be implemented?<br>
-<SPAN STYLE="color:GoldenRod">Yellow with O</span> = Partially implemented, useable<br>
+<span style="color:LightGreen">Something with ✅</span> = Implemented<br>
+<span style="color:IndianRed">Something with ❌</span> = Not implemented<br>
+<span style="color:DimGrey">Something with -</span> = Probably won't be implemented?<br>
+<SPAN STYLE="color:GoldenRod">Something with 🔵</span> = Partially implemented, useable<br>
 Hopefully I'll figure out a way to do colorramps at some point.<br>
 Blender lacks some compositor-applicable shader nodes, so this list will also include some shader nodes.<br>
 Currently the list is incomplete.<br>
@@ -32,7 +32,7 @@ Currently the list is incomplete.<br>
 <summary>Meta/Bugs/TODO</summary>
 <ul>
 <li><span style="color:IndianRed">Dynamic inputs ❌</span></li>
-<li><span style="color:GoldenRod">Dynamic widgets O</span></li>
+<li><span style="color:GoldenRod">Dynamic widgets 🔵</span></li>
 <li><span style="color:IndianRed">UV Input Node ❌ (For mapping textures)</span></li>
 <li><span style="color:IndianRed">Resize Canvas Node ❌</span></li>
 <li><span style="color:IndianRed">Extract Data Node ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
@@ -45,8 +45,8 @@ Currently the list is incomplete.<br>
 <details>
 <summary>Input</summary>
 <ul>
-<li><span style="color:LightGreen">Value ✔</span></li>
-<li><span style="color:LightGreen">RGB ✔</span></li>
+<li><span style="color:LightGreen">Value ✅</span></li>
+<li><span style="color:LightGreen">RGB ✅</span></li>
 <li><span style="color:IndianRed">Bokeh Image ❌</span></li>
 Most other input nodes seem redundant or not applicable.
 </ul>
@@ -55,12 +55,12 @@ Most other input nodes seem redundant or not applicable.
 <details>
 <summary>Color</summary>
 <ul>
-<li><span style="color:LightGreen">Brightness/Contrast ✔</span></li>
-<li><span style="color:LightGreen">Gamma ✔</span></li>
-<li><span style="color:LightGreen">Hue/Saturation/Value ✔</span></li>
-<li><span style="color:LightGreen">Invert Color ✔</span></li>
+<li><span style="color:LightGreen">Brightness/Contrast ✅</span></li>
+<li><span style="color:LightGreen">Gamma ✅</span></li>
+<li><span style="color:LightGreen">Hue/Saturation/Value ✅</span></li>
+<li><span style="color:LightGreen">Invert Color ✅</span></li>
 <li><span style="color:DimGrey">Light Falloff -</span></li>
-<li><span style="color:GoldenRod">Mix Color O (see Mix converter)</span></li>
+<li><span style="color:GoldenRod">Mix Color 🔵 (see Mix converter)</span></li>
 <li><span style="color:DimGrey">RGB Curves -</span></li>
 <li><span style="color:DimGrey">Color Balance -</span></li>
 <li><span style="color:DimGrey">Color Correction -</span></li>
@@ -72,41 +72,41 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Z Combine ❌</span></li>
 <li><span style="color:IndianRed">Alpha Convert ❌</span></li>
 <li><span style="color:IndianRed">Convert Colorspace ❌</span></li>
-<li><span style="color:LightGreen">Set Alpha ✔</span></li>
+<li><span style="color:LightGreen">Set Alpha ✅</span></li>
 </ul>
 </details>
 
 <details>
 <summary>Converter</summary>
 <ul>
-<li><span style="color:GoldenRod">Blackbody O (Missing rec709->linear, very minor color difference)</span></li>
-<li><span style="color:LightGreen">Clamp ✔</span></li>
+<li><span style="color:GoldenRod">Blackbody 🔵 (Missing rec709->linear, very minor color difference)</span></li>
+<li><span style="color:LightGreen">Clamp ✅</span></li>
 <li><span style="color:DimGrey">Color Ramp -</span></li>
-<li><span style="color:GoldenRod">Combine Color O (No colorspace option for YUV/YCbCr)</span></li>
-<li><span style="color:LightGreen">Combine XYZ ✔</span></li>
+<li><span style="color:GoldenRod">Combine Color 🔵 (No colorspace option for YUV/YCbCr)</span></li>
+<li><span style="color:LightGreen">Combine XYZ ✅</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
-<li><span style="color:LightGreen">Map Range ✔</span></li>
-<li><span style="color:GoldenRod">Math O</span></li>
+<li><span style="color:LightGreen">Map Range ✅</span></li>
+<li><span style="color:GoldenRod">Math 🔵</span></li>
 No dynamic inputs, the following operations do not work correctly: Smooth Minimum, Smooth Maximum<br>
 Divide does not handle division by 0 as Blender
-<li><span style="color:GoldenRod">Mix O</span></li>
+<li><span style="color:GoldenRod">Mix 🔵</span></li>
 No dynamic inputs, no non-uniform vector factor, the following blending modes do not work correctly: Overlay, Soft Light, Linear Light<br>
 Divide does not handle division by 0 as Blender
-<li><span style="color:LightGreen">RGB to BW ✔</span></li>
-<li><span style="color:GoldenRod">Separate Color O (No colorspace option for YUV/YCbCr)</span></li>
-<li><span style="color:LightGreen">Separate XYZ ✔</span></li>
+<li><span style="color:LightGreen">RGB to BW ✅</span></li>
+<li><span style="color:GoldenRod">Separate Color 🔵 (No colorspace option for YUV/YCbCr)</span></li>
+<li><span style="color:LightGreen">Separate XYZ ✅</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
-<li><span style="color:LightGreen">Wavelength ✔</span></li>
+<li><span style="color:LightGreen">Wavelength ✅</span></li>
 </ul>
 </details>
 
 <details>
 <summary>Transform</summary>
 <ul>
-<li><span style="color:GoldenRod">Rotate O (No bicubic interpolation)</span></li>
-<li><span style="color:GoldenRod">Scale O (No bicubic interpolation)</span></li>
-<li><span style="color:GoldenRod">Transform O (No bicubic interpolation)</span></li>
-<li><span style="color:GoldenRod">Translate O (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Rotate 🔵 (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Scale 🔵 (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Transform 🔵 (No bicubic interpolation)</span></li>
+<li><span style="color:GoldenRod">Translate 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:IndianRed">Corner Pin ❌</span></li>
 <li><span style="color:IndianRed">Crop ❌</span></li>
 <li><span style="color:IndianRed">Displace ❌</span></li>
