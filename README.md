@@ -28,7 +28,7 @@ Blender lacks some compositor-applicable shader nodes, so this list will also in
 Currently the list is incomplete.<br>
 
 <details>
-<summary>Meta/Bugs</summary>
+<summary>Meta/Bugs/TODO</summary>
 <ul>
 <li><span style="color:IndianRed">Dynamic inputs get disconnected on page refresh</span></li>
 <li><span style="color:IndianRed">UV Node</span></li>
@@ -36,8 +36,8 @@ Currently the list is incomplete.<br>
 <li><span style="color:IndianRed">Extract Data Node ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
 <li><span style="color:IndianRed">Merged input sockets and default values ("widgets") ❌</span></li>
 <li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
-<li><span style="color:GoldenRod">Input hiding O (Does not remember links, odd resizing)</span></li>
-<li><span style="color:IndianRed">Sometimes mild float inaccuracy compared to Blender, probably wrong colorspace ❌</span></li>
+<li><span style="color:GoldenRod">Input hiding O (Not quite there yet)</span></li>
+<li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
 </ul>
 </details>
 
@@ -59,7 +59,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Hue/Saturation/Value ✔</span></li>
 <li><span style="color:LightGreen">Invert Color ✔</span></li>
 <li><span style="color:DimGrey">Light Falloff -</span></li>
-<li><span style="color:IndianRed">Mix Color ❌ (see Mix converter)</span></li>
+<li><span style="color:GoldenRod">Mix Color O (see Mix converter)</span></li>
 <li><span style="color:DimGrey">RGB Curves -</span></li>
 <li><span style="color:DimGrey">Color Balance -</span></li>
 <li><span style="color:DimGrey">Color Correction -</span></li>
@@ -86,7 +86,8 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:DimGrey">Float Curve -</span></li>
 <li><span style="color:LightGreen">Map Range ✔</span></li>
 <li><span style="color:IndianRed">Math ❌</span></li>
-<li><span style="color:IndianRed">Mix ❌</span></li>
+<li><span style="color:GoldenRod">Mix O</span></li>
+No dynamic inputs, no non-uniform vector factor, the following blending modes do not work correctly: Overlay, Soft Light, Linear Light; Divide is close but does not match 1:1 in some cases
 <li><span style="color:LightGreen">RGB to BW ✔</span></li>
 <li><span style="color:GoldenRod">Separate Color O (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Separate XYZ ✔</span></li>
@@ -143,4 +144,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 20/56
+Implemented nodes: 21/56

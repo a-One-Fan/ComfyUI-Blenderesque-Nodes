@@ -32,9 +32,9 @@ def transform(
     extension: int
 ):
     """
-    Image is Batch x Width x Height x 4
-    LocRotScale is Batch x Width x Height x 5
-    Loc xy, Rot in rad, Scale xy
+    Image is Batch x Width x Height x 4\n
+    LocRotScale is Batch x Width x Height x 5\n
+    Loc xy, Rot in rad, Scale xy\n
     ##### Interpolation: 
     - 0 = closest
     - 1 = linear
@@ -50,9 +50,16 @@ def transform(
 
     results = []
 
+    lrs_size = locrotscale.size()
+    assert lrs_size[3] == 5, f"Locrotscale is not 5-channel ({lrs_size})"
+    assert lrs_size[0] == 1 or lrs_size[0] == te.size()[0], f"Locrotscale has wrong batch size ({lrs_size} != {te.size()})"
+    assert lrs_size[1] == newsize[0], f"Locrotscale doesn't match output image X ({lrs_size} != {newsize})"
+    assert lrs_size[2] == newsize[1], f"Locrotscale doesn't match output image Y ({lrs_size} != {newsize})"
+
     for b in range(te.size()[0]):
         te_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te[b].numpy())
-        locrotscale_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=locrotscale[b].numpy())
+        lrs_maybe_batch = locrotscale[b] if locrotscale.size()[0] > 1 else locrotscale[0]
+        locrotscale_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=lrs_maybe_batch.numpy())
         
         pixels = newsize[0] * newsize[1]
         res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 4 * np.dtype(np.float32).itemsize)
@@ -64,6 +71,6 @@ def transform(
 
         cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
 
-        results.append(torch.from_numpy(res_np_floats).to(dtype=torch.float32).reshape((te.size()[1], te.size()[2], 4)))
+        results.append(torch.from_numpy(res_np_floats).to(dtype=torch.float32).reshape((newsize[0], newsize[1], 4)))
 
     return torch.stack(results, dim=0)

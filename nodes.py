@@ -874,3 +874,133 @@ class BlenderTransform:
         b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
+    
+class BlenderMix:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Data Type": (["Float", "Vector", "Color"], ),
+                "Factor Mode": (["Uniform", "Non-Uniform"], ),
+                "Blending Mode": (["Mix", "Darken", "Multiply", "Color Burn", "Lighten", "Screen", "Color Dodge", "Add", 
+                                   "Overlay", "Soft Light", "Linear Light", "Difference", "Exclusion", "Subtract", "Divide",
+                                   "Hue", "Saturation", "Color", "Value"], ),
+                "Clamp Result": ("BOOLEAN", {"default": False}),
+                "Use Alpha": ("BOOLEAN", {"default": False}),
+                "Clamp Factor": ("BOOLEAN", {"default": True}),
+                **FLOAT_INPUT("Factor", 0.5, 0.0, 1.0),
+                **COLOR_INPUT("A", 1.0),
+                **COLOR_INPUT("B", 1.0),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "mix"
+    CATEGORY = "Blender/Converter"
+
+    def mix(self, **kwargs):
+        dtype = kwargs["Data Type"]
+        clamp_fac = kwargs["Clamp Factor"]
+
+        b_fac = BlenderData(kwargs, "Factor")
+        b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color")
+        b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color")
+        guess_canvas(b_fac, b_a, b_b)
+
+
+        fac = b_fac.as_float()
+        if clamp_fac:
+            fac = torch.clamp(fac, torch.zeros_like(fac), torch.ones_like(fac))
+
+        if dtype == "Float":
+            a_f = b_a.as_float()
+            b_f = b_b.as_float()
+
+            res = a_f * (1.0-fac) + b_f * fac
+            b_res = BlenderData(res)
+        
+        elif dtype == "Vector":
+            a_v = b_a.as_rgb()
+            b_v = b_b.as_rgb()
+
+            res = a_v * (1.0-fac) + b_v * fac
+            b_res = BlenderData(res, colortransform_force=False)
+
+        elif dtype == "Color":
+            a_color, a_alpha = b_a.as_rgb_a()
+            b_color, b_alpha = b_b.as_rgb_a()
+
+            mode = kwargs["Blending Mode"]
+            # No idea how use_alpha factors in yet
+
+            # A = "background", B = "foreground"
+            if mode == "Mix":
+                mixed = b_color
+            elif mode == "Darken":
+                mixed = torch.minimum(a_color, b_color)
+            elif mode == "Multiply":
+                mixed = a_color * b_color
+            elif mode == "Color Burn":
+                mixed = 1.0 - (1.0-a_color) / b_color
+            elif mode == "Lighten":
+                mixed = torch.maximum(a_color, b_color)
+            elif mode == "Screen":
+                mixed = 1.0 - (1.0-a_color)*(1.0-b_color)
+            elif mode == "Color Dodge":
+                mixed = a_color / (1.0 - b_color)
+            elif mode == "Add":
+                mixed = a_color + b_color
+            elif mode == "Overlay": # TODO Incorrect implementation
+                screen = 1.0 - (1.0-a_color)*(1.0-b_color)
+                mulled = a_color * b_color
+                hsl = rgb_to_hsl(b_color)
+                _, _, l = torch.split(hsl, 1, dim=-1)
+
+                mixed = tmix(screen, mulled, l < 0.5)
+            elif mode == "Soft Light": # TODO what does "Like Overlay, but more subtle." mean???
+                mixed = b_color
+            elif mode == "Linear Light": # TODO Incorrect implementation
+                linear_burn = a_color + b_color - 1.0
+                linear_dodge = a_color + b_color
+                hsl = rgb_to_hsl(b_color)
+                _, _, l = torch.split(hsl, 1, dim=-1)
+
+                mixed = tmix(linear_dodge, linear_burn, l < 0.5) # Doesn't seem worth it to simplify the maths here?
+            elif mode == "Difference":
+                mixed = torch.abs(a_color-b_color)
+            elif mode == "Exclusion":
+                mixed = a_color + b_color - (a_color*b_color*2.0)
+            elif mode == "Subtract":
+                mixed = a_color - b_color
+            elif mode == "Divide": # TODO does not match exactly in my test case
+                mixed = a_color / b_color
+            elif mode in ["Hue", "Saturation", "Color", "Value"]:
+                hsv_a = rgb_to_hsv(a_color)
+                hsv_b = rgb_to_hsv(b_color)
+
+                ha, sa, va = torch.split(hsv_a, 1, dim=-1)
+                hb, sb, vb = torch.split(hsv_b, 1, dim=-1)
+
+                if mode == "Hue":
+                    combo = torch.cat((hb, sa, va), dim=-1)
+                elif mode == "Saturation":
+                    combo = torch.cat((ha, sb, va), dim=-1)
+                elif mode == "Color":
+                    combo = torch.cat((hb, sb, va), dim=-1)
+                elif mode == "Value":
+                    combo = torch.cat((ha, sa, vb), dim=-1)
+                
+                mixed = hsv_to_rgb(combo)
+            
+            res = tmix(a_color, mixed, fac)
+            b_res = BlenderData(res, a_alpha)
+
+        return (b_res, b_res.as_out(), )

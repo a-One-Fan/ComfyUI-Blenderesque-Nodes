@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as functional
 from .util import *
+from .cl_wrapper import transform
 
 DEFAULT_CANVAS = (64, 64)
 
@@ -8,18 +9,28 @@ class BlenderData:
     image: torch.Tensor | None
     canvas: tuple[int, int] | None
     value: tuple | float | int | None
-    def __init__(self, any, paramname: str | torch.Tensor | None = None, colortransform = None):
-        """Create from sRGB Image tensor (1, 3 or 4 channels), 2 tensors (3 channels + 1 channel), int, float or 3/4-wide tuple of int/float"""
+    def __init__(self, any, paramname: str | torch.Tensor | None = None, 
+                 colortransform_if_converting: bool = True, colortransform_force: bool | None = None):
+        """
+        - Tensor (gets colortransformed if 3 or 4 channels)
+        - Tensor (RGB), Tensor (A) -> RGBA
+        - kwargs, parameter name -> Guess automatically
+        - BlenderData (copies by reference)
+        - number
+        - 2/3/4-dim tuple of numbers e.g. (1.0, 1.0, 0.0) 
+        """
 
-        if colortransform == None:
+        if colortransform_force != None:
+            colortransform = colortransform_force
+        else:
+            colortransform = False
             if type(paramname) == str:
                 if any.get(paramname + "R", None) != None:
-                    colortransform = True # No syntactic diabetes!
+                    colortransform = colortransform_if_converting # No syntactic diabetes!
                 if any.get(paramname, None) != None:
                     t = any[paramname]
-                    if type(t) is torch.Tensor:
-                        if t.size()[3] in [3, 4]:
-                            colortransform = True
+                    if type(t) is torch.Tensor and t.size()[3] in [3, 4]:
+                        colortransform = colortransform_if_converting
 
         def color_transform(te):
             if not colortransform:
@@ -54,6 +65,7 @@ class BlenderData:
                 raise Exception(f"Paramname of non-string type: {type(paramname)} {paramname}")
             if type(any.get(paramname)) is torch.Tensor:
                 self.image = color_transform(any[paramname])
+                self.canvas = (self.image.size()[1], self.image.size()[2])
             if type(any.get(paramname)) is BlenderData:
                 other = any[paramname]
                 self.image = other.image
@@ -84,13 +96,23 @@ class BlenderData:
             raise Exception(f"Can not convert {type(any)} to Blender data: {any}")
 
     def set_canvas(self, canvas: tuple[int, int]):
-        self.canvas = canvas
         if self.image != None and self.image.size()[1:-1] != canvas:
-            mode = 'bilinear'
-            if self.image.size()[1] < canvas[0] and self.image.size()[2] < canvas[1]:
-                mode = 'bicubic'
-            print(f"Interp: {mode}, {self.image.size()}, {canvas}")
-            self.image = functional.interpolate(self.image, [self.image.size()[0], canvas[0], canvas[1], self.image.size()[3]], mode=mode)
+            interp = 1 #'bilinear'
+            oldcanvas = (self.image.size()[1], self.image.size()[2])
+            if oldcanvas[0] < canvas[0] and oldcanvas[1] < canvas[1]:
+                interp = 2 #'bicubic'
+
+            im_rgba = self.as_rgba()
+
+            size_123 = (self.image.size()[0], canvas[0], canvas[1])
+            locrot = torch.zeros((*size_123, 3))
+            scale_x = torch.full((*size_123, 1), oldcanvas[0] / canvas[0])
+            scale_y = torch.full((*size_123, 1), oldcanvas[1] / canvas[1])
+            locrotscale = torch.cat((locrot, scale_x, scale_y, ), dim=-1)
+            cropped = transform(im_rgba, canvas, locrotscale, interp, 0)
+            self.image = cropped
+                    
+        self.canvas = canvas
 
     def as_2wide(self, batch=1) -> torch.Tensor:
         """
@@ -211,6 +233,7 @@ def guess_canvas(*blens: BlenderData, default=DEFAULT_CANVAS):
     for b in blens:
         if type(b.image) is torch.Tensor:
             res = b.image.size()[1:-1]
+            break
 
     if not res:
         res = default
