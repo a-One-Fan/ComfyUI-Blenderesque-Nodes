@@ -19,7 +19,7 @@ Nodes will output Blender-like data, and an image for general Comfy usage.<br>
 Differently sized images are automatically cropped/padded like Blender's compositor.
 You should prefer to use the Blender-like data output between these nodes, to reduce loss in precision from excessive colorspace transforms, or avoid very small images inteded for a simple preview, among other possible issues.<br>
 
-Currently implemented nodes:<br>
+Currently implemented nodes:<br><br>
 <span style="color:LightGreen">Something with ✅</span> = Implemented<br>
 <span style="color:IndianRed">Something with ❌</span> = Not implemented<br>
 <span style="color:DimGrey">Something with -</span> = Probably won't be implemented?<br>
@@ -27,15 +27,17 @@ Currently implemented nodes:<br>
 Hopefully I'll figure out a way to do colorramps at some point.<br>
 Blender lacks some compositor-applicable shader nodes, so this list will also include some shader nodes.<br>
 Currently the list is incomplete.<br>
-
+<br>
+Hopefully in the future I'll look into integrating this with https://github.com/AIGODLIKE/ComfyUI-BlenderAI-node for maximum convenience. I highly recommend that Blender addon!<br>
 <details>
 <summary>Meta/Bugs/TODO</summary>
 <ul>
+<li><span style="color:IndianRed">Integrate with https://github.com/AIGODLIKE/ComfyUI-BlenderAI-node ❌</span></li>
 <li><span style="color:IndianRed">Dynamic inputs ❌</span></li>
 <li><span style="color:GoldenRod">Dynamic widgets 🔵</span></li>
-<li><span style="color:IndianRed">UV Input Node ❌ (For mapping textures)</span></li>
+<li><span style="color:IndianRed">UV Input Node (For mapping textures) ❌</span></li>
 <li><span style="color:IndianRed">Resize Canvas Node ❌</span></li>
-<li><span style="color:IndianRed">Extract Data Node ❌ (Get image, mask, canvas xy, float, etc.)</span></li>
+<li><span style="color:IndianRed">Extract Data Node (Get image, mask, canvas xy, float, etc.) ❌</span></li>
 <li><span style="color:IndianRed">Merged input sockets and default values ("widgets") ❌</span></li>
 <li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
@@ -48,6 +50,7 @@ Currently the list is incomplete.<br>
 <li><span style="color:LightGreen">Value ✅</span></li>
 <li><span style="color:LightGreen">RGB ✅</span></li>
 <li><span style="color:IndianRed">Bokeh Image ❌</span></li>
+<li><span style="color:IndianRed">UV Node (For mapping textures) ❌</span></li>
 Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
@@ -97,6 +100,8 @@ Divide does not handle division by 0 as Blender
 <li><span style="color:LightGreen">Separate XYZ ✅</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
 <li><span style="color:LightGreen">Wavelength ✅</span></li>
+<br>
+<li><span style="color:IndianRed">Extract Data ❌</span></li>
 </ul>
 </details>
 
