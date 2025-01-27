@@ -909,7 +909,6 @@ class BlenderMix:
     def mix(self, **kwargs):
         dtype = kwargs["Data Type"]
         clamp_fac = kwargs["Clamp Factor"]
-        clamp_res = kwargs["Clamp Result"]
 
         b_fac = BlenderData(kwargs, "Factor")
         b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color", widget_override=kwargs["AR"] if dtype=="Float" else None)
@@ -939,6 +938,7 @@ class BlenderMix:
             a_color, a_alpha = b_a.as_rgb_a()
             b_color, b_alpha = b_b.as_rgb_a()
 
+            clamp_res = kwargs["Clamp Result"]
             mode = kwargs["Blending Mode"]
             # No idea how use_alpha factors in yet
 

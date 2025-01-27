@@ -164,7 +164,7 @@ function REMOVE_VECTOR_INPUT(obj, name){
     __REMOVE_WIDGET(obj, name+"Z");
 }
 
-const PREFIX = "blenderesque_dynamic_inputs.";
+const EXTENSION_NAME = "blenderesque_dynamic";
 
 const MAPRANGE = "BlenderMapRange";
 
@@ -186,8 +186,14 @@ const NODES_FILTER = ["BlenderBlur", "BlenderAntiAliasing", "BlenderDespeckle", 
     "BlenderKuwahara", "BlenderPixelate", "BlenderPosterize", "BlenderSunBeams"
 ];
 
-const NODES_ALL = [ {nodes: NODES_INPUT, color: "#83314A"}, {nodes: NODES_COLOR, color: "#6E6E1D"}, {nodes: NODES_CONVERTER, color: "#246283"},
-    {nodes: NODES_TRANSFORM, color: "#3B5959"}, {nodes: NODES_TEXTURE, color: "#79461D"}, {nodes: NODES_FILTER, color: "#3F2750"},
+const NODES_ALL = [
+    {nodes: NODES_INPUT, color: "#83314A"}, // 0
+    {nodes: NODES_COLOR, color: "#6E6E1D"}, // 1
+    {nodes: NODES_CONVERTER, color: "#246283"}, // 2
+    {nodes: NODES_TRANSFORM, color: "#3B5959"}, // 3
+    {nodes: NODES_TEXTURE, color: "#79461D"}, // 4
+    {nodes: NODES_FILTER, color: "#3F2750"}, // 5
+    {nodes: 0, color: "#3C3C83"}, // 6 Vector nodes?
 ];
 
 function find_blender_node(name){
@@ -207,8 +213,139 @@ function blender_node_color(name){
     return NODES_ALL[indices[0]].color;
 }
 
+function register_map_range(nodeType, nodeData){
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+
+        this.widgets.find((w) => w.name == "Data Type").callback = 
+            (widgetval) => {
+                if(widgetval == "Float"){
+                    REMOVE_VECTOR_INPUT(this, "Vector");
+                    REMOVE_VECTOR_INPUT(this, "From Min Vector");
+                    REMOVE_VECTOR_INPUT(this, "From Max Vector");
+                    REMOVE_VECTOR_INPUT(this, "To Min Vector");
+                    REMOVE_VECTOR_INPUT(this, "To Max Vector");
+
+                    FLOAT_INPUT(this, "Value");
+                    FLOAT_INPUT(this, "From Min Float");
+                    FLOAT_INPUT(this, "From Max Float");
+                    FLOAT_INPUT(this, "To Min Float");
+                    FLOAT_INPUT(this, "To Max Float");
+                }else{
+                    REMOVE_FLOAT_INPUT(this, "Value");
+                    REMOVE_FLOAT_INPUT(this, "From Min Float");
+                    REMOVE_FLOAT_INPUT(this, "From Max Float");
+                    REMOVE_FLOAT_INPUT(this, "To Min Float");
+                    REMOVE_FLOAT_INPUT(this, "To Max Float");
+
+                    VECTOR_INPUT(this, "Vector", 0.0, COLSTEP, -inf, inf, true);
+                    VECTOR_INPUT(this, "From Min Vector");
+                    VECTOR_INPUT(this, "From Max Vector");
+                    VECTOR_INPUT(this, "To Min Vector");
+                    VECTOR_INPUT(this, "To Max Vector");
+                }
+                this.graph.setDirtyCanvas(true);
+                recalculateHeight(this);
+            }
+        
+        let w = this.widgets.find((w) => w.name == "Data Type");
+        w.callback(w.value);
+
+        this.widgets.find((w) => w.name == "Interpolation Type").callback = 
+            (widgetval) => {
+                if(["Linear", "Stepped Linear"].includes(widgetval)){
+                    __ADD_WIDGET(this, "BOOLEAN", "Clamp", true);
+                }else{
+                    __REMOVE_WIDGET(this, "Clamp");
+                }
+
+                if(widgetval == "Stepped Linear"){
+                    FLOAT_INPUT(this, "Steps", 4.0, 0.0);
+                }else{
+                    REMOVE_FLOAT_INPUT(this, "Steps");
+                }
+
+                this.graph.setDirtyCanvas(true);
+                recalculateHeight(this);
+            }
+            
+        w = this.widgets.find((w) => w.name == "Interpolation Type");
+        w.callback(w.value);
+
+        return me;
+    }
+}
+
+function register_mix(nodeType, nodeData){
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+
+        let w_dtype = this.widgets.find((w) => w.name == "Data Type");
+        let w_blendmode = this.widgets.find((w) => w.name == "Blending Mode");
+
+        w_blendmode.callback = (widgetval) => {
+            this.title = widgetval;
+        }
+
+        if (w_dtype == "Color"){
+            w_blendmode.callback(w_blendmode.value);
+        }
+
+        w_dtype.callback = 
+            (widgetval) => {
+                if(widgetval == "Float") {
+                    __REMOVE_WIDGET(this, "Factor Mode");
+                    __REMOVE_WIDGET(this, "Clamp Result");
+                    __REMOVE_WIDGET(this, "Blending Mode");
+                    this.color = NODES_ALL[2].color; // Converter color
+                    this.title = "Mix";
+                } else if (widgetval == "Vector") {
+                    __ADD_WIDGET(this, "combo", "Factor Mode");
+                    __REMOVE_WIDGET(this, "Clamp Result");
+                    __REMOVE_WIDGET(this, "Blending Mode");
+                    this.color = NODES_ALL[6].color; // Vector color
+                    this.title = "Mix";
+                } else if (widgetval == "Color") {
+                    __ADD_WIDGET(this, "combo", "Blending Mode");
+                    __ADD_WIDGET(this, "BOOLEAN", "Clamp Result");
+                    __REMOVE_WIDGET(this, "Factor Mode");
+                    this.color = NODES_ALL[1].color; // Color color
+                    this.title = w_blendmode.value;
+                }
+
+                if(widgetval == "Float") {
+                    __REMOVE_WIDGET(this, "AG");
+                    __REMOVE_WIDGET(this, "AB");
+
+                    __REMOVE_WIDGET(this, "BG");
+                    __REMOVE_WIDGET(this, "BB");
+                }else{
+                    __ADD_WIDGET(this, "FLOAT", "AG");
+                    __ADD_WIDGET(this, "FLOAT", "AB");
+
+                    __ADD_WIDGET(this, "FLOAT", "BG");
+                    __ADD_WIDGET(this, "FLOAT", "BB");
+                }
+                console.log(this);
+                this.graph.setDirtyCanvas(true);
+                recalculateHeight(this);
+            }
+        
+        w_dtype.callback(w_dtype.value);
+
+        return me;
+    }
+}
+
+const REGISTER_MAP = {
+    "BlenderMapRange": register_map_range,
+    "BlenderMix": register_mix,
+}
+
 app.registerExtension({
-	name: PREFIX + MAPRANGE,
+	name: EXTENSION_NAME,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 
         if (find_blender_node(nodeData.name) != null){
@@ -223,70 +360,9 @@ app.registerExtension({
             }
         }
 
-        if (nodeData.name !== MAPRANGE) {
-            return;
-        }
-
-        const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function () {
-            const me = await onNodeCreated?.apply(this);
-
-            this.widgets.find((w) => w.name == "Data Type").callback = 
-                (widgetval) => {
-                    if(widgetval == "Float"){
-                        REMOVE_VECTOR_INPUT(this, "Vector");
-                        REMOVE_VECTOR_INPUT(this, "From Min Vector");
-                        REMOVE_VECTOR_INPUT(this, "From Max Vector");
-                        REMOVE_VECTOR_INPUT(this, "To Min Vector");
-                        REMOVE_VECTOR_INPUT(this, "To Max Vector");
-
-                        FLOAT_INPUT(this, "Value");
-                        FLOAT_INPUT(this, "From Min Float");
-                        FLOAT_INPUT(this, "From Max Float");
-                        FLOAT_INPUT(this, "To Min Float");
-                        FLOAT_INPUT(this, "To Max Float");
-                    }else{
-                        REMOVE_FLOAT_INPUT(this, "Value");
-                        REMOVE_FLOAT_INPUT(this, "From Min Float");
-                        REMOVE_FLOAT_INPUT(this, "From Max Float");
-                        REMOVE_FLOAT_INPUT(this, "To Min Float");
-                        REMOVE_FLOAT_INPUT(this, "To Max Float");
-
-                        VECTOR_INPUT(this, "Vector", 0.0, COLSTEP, -inf, inf, true);
-                        VECTOR_INPUT(this, "From Min Vector");
-                        VECTOR_INPUT(this, "From Max Vector");
-                        VECTOR_INPUT(this, "To Min Vector");
-                        VECTOR_INPUT(this, "To Max Vector");
-                    }
-                    this.graph.setDirtyCanvas(true);
-                    recalculateHeight(this);
-                }
-            
-            let w = this.widgets.find((w) => w.name == "Data Type");
-            w.callback(w.value);
-
-            this.widgets.find((w) => w.name == "Interpolation Type").callback = 
-                (widgetval) => {
-                    if(["Linear", "Stepped Linear"].includes(widgetval)){
-                        __ADD_WIDGET(this, "BOOLEAN", "Clamp", true);
-                    }else{
-                        __REMOVE_WIDGET(this, "Clamp");
-                    }
-
-                    if(widgetval == "Stepped Linear"){
-                        FLOAT_INPUT(this, "Steps", 4.0, 0.0);
-                    }else{
-                        REMOVE_FLOAT_INPUT(this, "Steps");
-                    }
-
-                    this.graph.setDirtyCanvas(true);
-                    recalculateHeight(this);
-                }
-                
-            w = this.widgets.find((w) => w.name == "Interpolation Type");
-            w.callback(w.value);
-
-            return me;
+        let reg = REGISTER_MAP[nodeData.name];
+        if(reg){
+            reg(nodeType, nodeData);
         }
 
         return nodeType;
