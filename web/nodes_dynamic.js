@@ -58,8 +58,8 @@ function showWidget(widget) {
 const WIDGET_SUFFIXES = ["F", "R", "G", "B", "A", "X", "Y", "Z"];
 const SOLO_WIDGET = "solo_widget";
 const SOLO_INPUT = "solo_input";
-const SOLO_INPUT_DELETED_NAME = "X";
-function rearrange_inputs_and_widgets(node, preferred_order = [], solo_input_name_map = {}) {
+const INPUT_DELETED_NAME = "X";
+function get_inputs_widgets_as_pairlist(node, preferred_order = []){
     let pairs = [];
     for(let i=0; i<node.inputs.length; i++){
         let inp = node.inputs[i];
@@ -68,14 +68,17 @@ function rearrange_inputs_and_widgets(node, preferred_order = [], solo_input_nam
         for(let j=0; j<node.widgets.length; j++){
             let w = node.widgets[j];
             for(let k=0; k<WIDGET_SUFFIXES.length; k++){
-                if(w.name == inp.name+WIDGET_SUFFIXES[k] && w.type != CONVERTED_TYPE){
+                if(w.name == inp.name+WIDGET_SUFFIXES[k]){
+                    if(w.type != CONVERTED_TYPE){
+                        real_widgets++;
+                    }
                     found_widgets.push(w);
                     break;
                 }
             }
         }
         if(found_widgets.length > 0){
-            pairs.push([inp, found_widgets]);
+            pairs.push([inp, found_widgets, real_widgets]);
         }else{
             pairs.push([inp, SOLO_INPUT]);
         }
@@ -115,45 +118,71 @@ function rearrange_inputs_and_widgets(node, preferred_order = [], solo_input_nam
     }
 
     ordered = ordered.concat(pairs);
+    return ordered;
+}
+
+function rearrange_inputs_and_widgets(node, preferred_order = []) {
+    let ordered = get_inputs_widgets_as_pairlist(node, preferred_order);
+
+    for(let i=0; i<ordered.length; i++){
+        if([SOLO_INPUT, SOLO_WIDGET].includes(ordered[i][1])){
+            continue;
+        }
+
+        if(ordered[i][0].link != undefined && ordered[i][2] > 0) { // Must hide widgets
+            let real_wids = [];
+            for(let j=0;j<ordered[i][1].length;j++){
+                let w = ordered[i][1][j];
+                if(w.type != CONVERTED_TYPE){
+                    real_wids.push(w);
+                }
+            }
+            ordered[i][0].origVisibleWidgets = real_wids;
+            for(let j=0; j<real_wids.length; j++){
+                hideWidget(node, real_wids[j]);
+            }
+            ordered[i][2] = 0;
+        }
+
+        if(ordered[i][0].link == undefined && ordered[i][0].origVisibleWidgets) { // Must reveal hidden widgets
+            let real_wids = ordered[i][0].origVisibleWidgets;
+            for(let j=0; j<real_wids.length; j++){
+                showWidget(real_wids[j]);
+            }
+            ordered[i][2] += ordered[i][0].origVisibleWidgets.length;
+            ordered[i][0].origVisibleWidgets = undefined;
+        }
+    }
 
     let currentHeight = node.outputs.length * 24 + 6;
     for(let i=0; i<ordered.length; i++){
         if(ordered[i][1] == SOLO_WIDGET){
             ordered[i][0].y = currentHeight;
-        } else if (ordered[i][1] == SOLO_INPUT){
+        } else if (ordered[i][1] == SOLO_INPUT || ordered[i][2] == 0){
             ordered[i][0].pos = [0, currentHeight+10.5];
-            let desired_name = solo_input_name_map[ordered[i][0].name];
-            if(!desired_name){
-                desired_name = SOLO_INPUT_DELETED_NAME;
+            let desired_label = ordered[i][0].name;
+            if(ordered[i][0].backupLabel){
+                desired_label = ordered[i][0].backupLabel;
             }
-            ordered[i][0].label = desired_name;
+            ordered[i][0].label = desired_label;
         } else {
             ordered[i][0].label = "   ";
             ordered[i][0].pos = [0, currentHeight+10.5];
 
             let wids=ordered[i][1];
             for(let j=0; j<wids.length; j++){
+                if(wids[j].type == CONVERTED_TYPE){
+                    continue;
+                }
                 wids[j].y = currentHeight;
                 currentHeight += 24;
             }
-            currentHeight -= 24;
+            currentHeight -= (ordered[i][2] > 0) * 24;
         }
         currentHeight += 24;
     }
 
     node._size[1] = currentHeight + 10;
-}
-
-//target_node.onConnectionsChange(
-//    LiteGraph.INPUT, <- slot type
-//    target_slot,
-//    true, <- true if connect, false if disconnect
-//    link_info,
-//    input
-//);
-
-function update_widgets_connection_change(node, slot, changetype){
-
 }
 
 function recalculateHeight(node) {
@@ -174,6 +203,7 @@ function __REMOVE_INPUT(obj, name){
     let ii = obj.inputs.findIndex((i) => i.name == name);
     let i = obj.inputs[ii];
     // Do something
+    i.backupLabel = INPUT_DELETED_NAME;
 }
 
 function __ADD_INPUT(obj, name, type=0){
@@ -184,6 +214,7 @@ function __ADD_INPUT(obj, name, type=0){
     }else{
         i = obj.inputs[ii];
     }
+    i.backupLabel = undefined;
 }
 
 function __REMOVE_WIDGET(obj, name){
@@ -615,6 +646,14 @@ app.registerExtension({
                 this.constructor.title_text_color = "#E8E8E8";
                 relabel_widgets(this);
                 rearrange_inputs_and_widgets(this);
+
+                const onConnectionsChangePrev = this.onConnectionsChange;
+                this.onConnectionsChange = async function (eventtype, slotid, is_connect, link_info, input) {
+                    if(onConnectionsChangePrev){
+                        await onConnectionsChangePrev(eventtype, slotid, is_connect, link_info, input);
+                    }
+                    rearrange_inputs_and_widgets(this);
+                }
                 return me;
             }
         }
