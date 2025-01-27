@@ -10,7 +10,8 @@ class BlenderData:
     canvas: tuple[int, int] | None
     value: tuple | float | int | None
     def __init__(self, any, paramname: str | torch.Tensor | None = None, 
-                 colortransform_if_converting: bool = True, colortransform_force: bool | None = None):
+                 colortransform_if_converting: bool = True, colortransform_force: bool | None = None,
+                 widget_override=None):
         """
         - Tensor (gets colortransformed if 3 or 4 channels)
         - Tensor (RGB), Tensor (A) -> RGBA
@@ -71,6 +72,8 @@ class BlenderData:
                 self.image = other.image
                 self.canvas = other.canvas
                 self.value = other.value
+            elif widget_override is not None:
+                self.value = widget_override
             elif any.get(paramname + "A", None) != None:
                 self.value = (any[paramname + "R"], any[paramname + "G"], any[paramname + "B"], any[paramname + "A"])
             elif any.get(paramname + "R", None) != None:

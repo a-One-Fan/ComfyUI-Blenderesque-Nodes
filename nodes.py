@@ -909,10 +909,11 @@ class BlenderMix:
     def mix(self, **kwargs):
         dtype = kwargs["Data Type"]
         clamp_fac = kwargs["Clamp Factor"]
+        clamp_res = kwargs["Clamp Result"]
 
         b_fac = BlenderData(kwargs, "Factor")
-        b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color")
-        b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color")
+        b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color", widget_override=kwargs["AR"] if dtype=="Float" else None)
+        b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color", widget_override=kwargs["BR"] if dtype=="Float" else None)
         guess_canvas(b_fac, b_a, b_b)
 
 
@@ -941,6 +942,8 @@ class BlenderMix:
             mode = kwargs["Blending Mode"]
             # No idea how use_alpha factors in yet
 
+            postmix = True
+
             # A = "background", B = "foreground"
             if mode == "Mix":
                 mixed = b_color
@@ -958,30 +961,26 @@ class BlenderMix:
                 mixed = a_color / (1.0 - b_color)
             elif mode == "Add":
                 mixed = a_color + b_color
-            elif mode == "Overlay": # TODO Incorrect implementation
-                screen = 1.0 - (1.0-a_color)*(1.0-b_color)
-                mulled = a_color * b_color
-                hsl = rgb_to_hsl(b_color)
-                _, _, l = torch.split(hsl, 1, dim=-1)
+            elif mode == "Overlay": # blender/source/blender/blenkernel/intern/material.cc
+                less_than_half = (1.0 - fac + 2.0 * fac * b_color) * a_color
+                more_than_half = 1.0 - (1.0 - fac + 2.0 * fac * (1.0 - b_color)) * (1.0 - a_color)
 
-                mixed = tmix(screen, mulled, l < 0.5)
-            elif mode == "Soft Light": # TODO what does "Like Overlay, but more subtle." mean???
-                mixed = b_color
-            elif mode == "Linear Light": # TODO Incorrect implementation
-                linear_burn = a_color + b_color - 1.0
-                linear_dodge = a_color + b_color
-                hsl = rgb_to_hsl(b_color)
-                _, _, l = torch.split(hsl, 1, dim=-1)
-
-                mixed = tmix(linear_dodge, linear_burn, l < 0.5) # Doesn't seem worth it to simplify the maths here?
+                mixed = tmix(less_than_half, more_than_half, a_color >= 0.5)
+                postmix = False
+            elif mode == "Soft Light":
+                scr = 1.0 - (1.0-b_color)*(1.0-a_color)
+                mixed = (1.0-a_color) * b_color * a_color + a_color * scr
+            elif mode == "Linear Light":
+                mixed = a_color + fac * (2.0 * (b_color-0.5))
+                postmix = False
             elif mode == "Difference":
                 mixed = torch.abs(a_color-b_color)
             elif mode == "Exclusion":
                 mixed = a_color + b_color - (a_color*b_color*2.0)
             elif mode == "Subtract":
                 mixed = a_color - b_color
-            elif mode == "Divide": # TODO does not match exactly in my test case
-                mixed = a_color / b_color
+            elif mode == "Divide":
+                mixed = tmix(a_color / b_color, 0.0, torch.isclose(b_color, torch.zeros_like(b_color)))
             elif mode in ["Hue", "Saturation", "Color", "Value"]:
                 hsv_a = rgb_to_hsv(a_color)
                 hsv_b = rgb_to_hsv(b_color)
@@ -1000,8 +999,13 @@ class BlenderMix:
                 
                 mixed = hsv_to_rgb(combo)
             
-            res = tmix(a_color, mixed, fac)
-            b_res = BlenderData(res, a_alpha)
+            if postmix:
+                mixed = tmix(a_color, mixed, fac)
+
+            if clamp_res:
+                mixed = torch.clamp(mixed, torch.zeros_like(mixed), torch.ones_like(mixed))
+            
+            b_res = BlenderData(mixed, a_alpha)
 
         return (b_res, b_res.as_out(), )
     
@@ -1054,8 +1058,8 @@ class BlenderMath:
             res = a - b
         elif op == "Multiply":
             res = a * b
-        elif op == "Divide": #TODO: Divide by (near) zero should result in 0 to match Blender? Investigate
-            res = a / b
+        elif op == "Divide":
+            res = tmix(a / b, 0.0, torch.isclose(b, torch.zeros_like(b)))
         elif op == "Multiply Add":
             res = a * b + c
         
@@ -1084,10 +1088,15 @@ class BlenderMath:
             res = tmix(tmix(-1.0, 0.0, a == 0.0), 1.0, a > 0.0)
         elif op == "Compare":
             res = (torch.abs(a-b) < c).to(torch.float32)
-        elif op == "Smooth Minimum": # TODO: Does not match Blender
-            res = (a + b + torch.sqrt((a - b) * (a - b) + c))/2.0
-        elif op == "Smooth Maximum": # TODO: Does not match Blender
-            res = (a + b + torch.sqrt((a + b) * (a + b) + c))/2.0
+        elif op in ["Smooth Minimum", "Smooth Maximum"]: #blender/source/blender/nodes/shader/nodes/node_shader_math.cc
+            if op == "Smooth Minimum":
+                sign = 1.0
+            else:
+                sign = -1.0
+                a, b, c = -a, -b, -c
+            h = (c - (a - b).abs()).maximum(torch.zeros_like(a)) / c
+            if_branch = a.minimum(b) - h * h * h * c * (1.0 / 6.0)
+            res = tmix(if_branch, a.minimum(b), c == 0.0) * sign
         
         elif op == "Round":
             res = torch.round(a)
