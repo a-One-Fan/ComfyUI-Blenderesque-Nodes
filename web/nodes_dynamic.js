@@ -498,6 +498,9 @@ function register_mix(nodeType, nodeData){
                 let wbg = this.widgets.find((w) => w.name == "BG");
                 let wbb = this.widgets.find((w) => w.name == "BB");
 
+                let ia = this.inputs.find((i) => i.name == "A");
+                let ib = this.inputs.find((i) => i.name == "B");
+
                 if(widgetval == "Float") {
                     __REMOVE_WIDGET(this, "AG");
                     __REMOVE_WIDGET(this, "AB");
@@ -507,12 +510,26 @@ function register_mix(nodeType, nodeData){
 
                     war.label = "A";
                     wbr.label = "B";
+                    
+                    if(ia.origVisibleWidgets){
+                        ia.origVisibleWidgets = [war]
+                    }
+                    if(ib.origVisibleWidgets){
+                        ib.origVisibleWidgets = [wbr]
+                    }
                 }else{
-                    __ADD_WIDGET(this, "FLOAT", "AG");
-                    __ADD_WIDGET(this, "FLOAT", "AB");
-
-                    __ADD_WIDGET(this, "FLOAT", "BG");
-                    __ADD_WIDGET(this, "FLOAT", "BB");
+                    if(ia.link){
+                        ia.origVisibleWidgets = [war, wag, wab]
+                    }else{
+                        __ADD_WIDGET(this, "FLOAT", "AG");
+                        __ADD_WIDGET(this, "FLOAT", "AB");
+                    }
+                    if(ib.link){
+                        ib.origVisibleWidgets = [wbr, wbg, wbb]
+                    }else{
+                        __ADD_WIDGET(this, "FLOAT", "BG");
+                        __ADD_WIDGET(this, "FLOAT", "BB");
+                    }
 
                     if(widgetval == "Vector") {
                         war.label = "A X";
@@ -533,7 +550,7 @@ function register_mix(nodeType, nodeData){
                     }
                 }
 
-                if(widgetval == "Vector") {
+                if(widgetval == "Vector") { // Non-uniform factor
 
                 }
                 
