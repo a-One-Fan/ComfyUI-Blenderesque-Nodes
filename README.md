@@ -2,7 +2,7 @@
 Blender-like nodes for ComfyUI.<br>
 
 <h1>Work In Progress<br>
-Nodes might change and you will need to redo your workflow</h1>
+Nodes might change and you will need to redo your workflow! If a node is broken, delete it and re-add it.</h1>
 
 <img src=mary_combo.png style="width:50%;height:50%">
 
