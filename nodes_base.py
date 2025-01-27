@@ -11,7 +11,7 @@ class BlenderData:
     value: tuple | float | int | None
     def __init__(self, any, paramname: str | torch.Tensor | None = None, 
                  colortransform_if_converting: bool = True, colortransform_force: bool | None = None,
-                 widget_override=None):
+                 widget_override=None, default_notfound=None):
         """
         - Tensor (gets colortransformed if 3 or 4 channels)
         - Tensor (RGB), Tensor (A) -> RGBA
@@ -83,7 +83,10 @@ class BlenderData:
             elif any.get(paramname + "X", None) != None:
                 self.value = (any[paramname + "X"], any[paramname + "Y"], any[paramname + "Z"])
             else:
-                raise KeyError(f"No Blender-like parameters to initialize by {paramname} in {any}")
+                if default_notfound != None:
+                    self.value = default_notfound
+                else:
+                    raise KeyError(f"No Blender-like parameters to initialize by {paramname} in {any}")
         
         elif paramname != None:
             raise Exception(f"Paramname of incorrect type: {type(paramname)} {paramname}")

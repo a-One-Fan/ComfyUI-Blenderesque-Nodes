@@ -1046,8 +1046,8 @@ class BlenderMath:
         op = kwargs["Operation"]
 
         b_a = BlenderData(kwargs, "A")
-        b_b = BlenderData(kwargs, "B")
-        b_c = BlenderData(kwargs, "C")
+        b_b = BlenderData(kwargs, "B", default_notfound=0.0)
+        b_c = BlenderData(kwargs, "C", default_notfound=0.0)
         guess_canvas(b_a, b_b, b_c)
 
         a, b, c = b_a.as_float(), b_b.as_float(), b_c.as_float()

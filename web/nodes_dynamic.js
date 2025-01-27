@@ -93,7 +93,7 @@ function __REMOVE_WIDGET(obj, name){
     hideWidget(obj, w);
 }
 
-function __ADD_WIDGET(obj, type, name, def, min, max, step, callback = () => {}, properties = {}){
+function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = () => {}, properties = {}){
     if(type == "FLOAT"){
         type = "number";
     }
@@ -104,10 +104,12 @@ function __ADD_WIDGET(obj, type, name, def, min, max, step, callback = () => {},
     let w = null;
     if (wi == -1){
         w = obj.addWidget(type, name, def, callback, properties, {min: min, max: max, step: step});
+        w.label = label;
     }else{
         w = obj.widgets[wi];
         showWidget(w);
         w.type = type;
+        w.label = label;
     }
 }
 
@@ -116,11 +118,11 @@ function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, 
     if (hidden_default){
         return;
     }
-    __ADD_WIDGET(obj, "FLOAT", name + "R", def, min, max, step);
-    __ADD_WIDGET(obj, "FLOAT", name + "G", def, min, max, step);
-    __ADD_WIDGET(obj, "FLOAT", name + "B", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name + "R", name + " Red", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name + "G", name + " Green", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name + "B", name + " Blue", def, min, max, step);
     if(alpha){
-        __ADD_WIDGET(obj, "FLOAT", name + "A", def);
+        __ADD_WIDGET(obj, "FLOAT", name + "A", name + " Alpha", def);
     }
 }
 
@@ -139,7 +141,7 @@ function FLOAT_INPUT(obj, name, def=0.0, min=0.0, max=1.0, step=COLSTEP, hidden_
     if (hidden_default){
         return;
     }
-    __ADD_WIDGET(obj, "FLOAT", name+"F", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name+"F", name, def, min, max, step);
 }
 
 function REMOVE_FLOAT_INPUT(obj, name){
@@ -152,9 +154,9 @@ function VECTOR_INPUT(obj, name, def=0.0, step=COLSTEP, min=-inf, max=inf, hidde
     if (hidden_default){
         return;
     }
-    __ADD_WIDGET(obj, "FLOAT", name+"X", def, min, max, step);
-    __ADD_WIDGET(obj, "FLOAT", name+"Y", def, min, max, step);
-    __ADD_WIDGET(obj, "FLOAT", name+"Z", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name+"X", name + " X", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name+"Y", name + " Y", def, min, max, step);
+    __ADD_WIDGET(obj, "FLOAT", name+"Z", name + " Z", def, min, max, step);
 }
 
 function REMOVE_VECTOR_INPUT(obj, name){
@@ -162,6 +164,29 @@ function REMOVE_VECTOR_INPUT(obj, name){
     __REMOVE_WIDGET(obj, name+"X");
     __REMOVE_WIDGET(obj, name+"Y");
     __REMOVE_WIDGET(obj, name+"Z");
+}
+
+const RELABEL_MAP = {
+    "F": "",
+    "R": " Red",
+    "G": " Green",
+    "B": " Blue",
+    "A": " Alpha",
+    "X": " X",
+    "Y": " Y",
+    "Z": " Z",
+}
+
+function relabel_widgets(node){
+    for(let i=0; i<node.widgets.length; i++){
+        let w = node.widgets[i];
+
+        let last = w.name[w.name.length-1];
+        let mapped = RELABEL_MAP[last];
+        if(mapped != undefined){
+            w.label = w.name.substr(0, w.name.length-1) + mapped;
+        }
+    }
 }
 
 const EXTENSION_NAME = "blenderesque_dynamic";
@@ -315,18 +340,51 @@ function register_mix(nodeType, nodeData){
                     this.title = w_blendmode.value;
                 }
 
+                let war = this.widgets.find((w) => w.name == "AR");
+                let wag = this.widgets.find((w) => w.name == "AG");
+                let wab = this.widgets.find((w) => w.name == "AB");
+
+                let wbr = this.widgets.find((w) => w.name == "BR");
+                let wbg = this.widgets.find((w) => w.name == "BG");
+                let wbb = this.widgets.find((w) => w.name == "BB");
+
                 if(widgetval == "Float") {
                     __REMOVE_WIDGET(this, "AG");
                     __REMOVE_WIDGET(this, "AB");
 
                     __REMOVE_WIDGET(this, "BG");
                     __REMOVE_WIDGET(this, "BB");
+
+                    war.label = "A";
+                    wbr.label = "B";
                 }else{
                     __ADD_WIDGET(this, "FLOAT", "AG");
                     __ADD_WIDGET(this, "FLOAT", "AB");
 
                     __ADD_WIDGET(this, "FLOAT", "BG");
                     __ADD_WIDGET(this, "FLOAT", "BB");
+
+                    if(widgetval == "Vector") {
+                        war.label = "A X";
+                        wag.label = "A Y";
+                        wab.label = "A Z";
+
+                        wbr.label = "B X";
+                        wbg.label = "B Y";
+                        wbb.label = "B Z";
+                    }else{
+                        war.label = "A Red";
+                        wag.label = "A Green";
+                        wab.label = "A Blue";
+
+                        wbr.label = "B Red";
+                        wbg.label = "B Green";
+                        wbb.label = "B Blue";
+                    }
+                }
+
+                if(widgetval == "Vector") {
+
                 }
                 
                 this.graph.setDirtyCanvas(true);
@@ -387,6 +445,10 @@ function register_math(nodeType, nodeData){
             if(!ins){
                 ins = ["Value", "Value"];
             }
+            let wa = this.widgets.find((w) => w.name == "AF");
+            let wb = this.widgets.find((w) => w.name == "BF");
+            let wc = this.widgets.find((w) => w.name == "CF");
+            let wabc = [wa, wb, wc];
             if(ins.length == 1){
                 REMOVE_FLOAT_INPUT(this, "B");
                 REMOVE_FLOAT_INPUT(this, "C");
@@ -398,6 +460,10 @@ function register_math(nodeType, nodeData){
             if(ins.length == 3){
                 FLOAT_INPUT(this, "B");
                 FLOAT_INPUT(this, "C");
+            }
+
+            for(let i=0; i<ins.length; i++){
+                wabc[i].label = ins[i];
             }
 
             this.graph.setDirtyCanvas(true);
@@ -428,6 +494,7 @@ app.registerExtension({
                 this.bgcolor = "#303030";
                 this.boxcolor = "#DDDDDD";
                 this.constructor.title_text_color = "#E8E8E8";
+                relabel_widgets(this);
                 return me;
             }
         }
