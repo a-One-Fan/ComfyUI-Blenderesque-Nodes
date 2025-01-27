@@ -55,6 +55,107 @@ function showWidget(widget) {
     }
 }
 
+const WIDGET_SUFFIXES = ["F", "R", "G", "B", "A", "X", "Y", "Z"];
+const SOLO_WIDGET = "solo_widget";
+const SOLO_INPUT = "solo_input";
+const SOLO_INPUT_DELETED_NAME = "X";
+function rearrange_inputs_and_widgets(node, preferred_order = [], solo_input_name_map = {}) {
+    let pairs = [];
+    for(let i=0; i<node.inputs.length; i++){
+        let inp = node.inputs[i];
+        let found_widgets = [];
+        let real_widgets = 0;
+        for(let j=0; j<node.widgets.length; j++){
+            let w = node.widgets[j];
+            for(let k=0; k<WIDGET_SUFFIXES.length; k++){
+                if(w.name == inp.name+WIDGET_SUFFIXES[k] && w.type != CONVERTED_TYPE){
+                    found_widgets.push(w);
+                    break;
+                }
+            }
+        }
+        if(found_widgets.length > 0){
+            pairs.push([inp, found_widgets]);
+        }else{
+            pairs.push([inp, SOLO_INPUT]);
+        }
+    }
+
+    let inputless_widgets = [];
+    for(let i=0; i<node.widgets.length; i++){
+        if(node.widgets[i].type == CONVERTED_TYPE){
+            continue;
+        }
+        let found=false;
+        for(let j=0; j<pairs.length && !found; j++){
+            if(pairs[j][1] != SOLO_INPUT){
+                for(let k=0; k<pairs[j][1].length; k++){
+                    if(pairs[j][1][k].name == node.widgets[i].name){
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if(!found){
+            inputless_widgets.push([node.widgets[i], SOLO_WIDGET]);
+        }
+    }
+
+    pairs = inputless_widgets.concat(pairs);
+
+    let ordered = [];
+    for(let i=0; i<preferred_order.length; i++){
+        for(let j=0; j<pairs.length; j++){
+            if(pairs[j][0].name == preferred_order[i]){
+                ordered.push(pairs[j]);
+                break;
+            }
+        }
+    }
+
+    ordered = ordered.concat(pairs);
+
+    let currentHeight = node.outputs.length * 24 + 6;
+    for(let i=0; i<ordered.length; i++){
+        if(ordered[i][1] == SOLO_WIDGET){
+            ordered[i][0].y = currentHeight;
+        } else if (ordered[i][1] == SOLO_INPUT){
+            ordered[i][0].pos = [0, currentHeight+10.5];
+            let desired_name = solo_input_name_map[ordered[i][0].name];
+            if(!desired_name){
+                desired_name = SOLO_INPUT_DELETED_NAME;
+            }
+            ordered[i][0].label = desired_name;
+        } else {
+            ordered[i][0].label = "   ";
+            ordered[i][0].pos = [0, currentHeight+10.5];
+
+            let wids=ordered[i][1];
+            for(let j=0; j<wids.length; j++){
+                wids[j].y = currentHeight;
+                currentHeight += 24;
+            }
+            currentHeight -= 24;
+        }
+        currentHeight += 24;
+    }
+
+    node._size[1] = currentHeight + 10;
+}
+
+//target_node.onConnectionsChange(
+//    LiteGraph.INPUT, <- slot type
+//    target_slot,
+//    true, <- true if connect, false if disconnect
+//    link_info,
+//    input
+//);
+
+function update_widgets_connection_change(node, slot, changetype){
+
+}
+
 function recalculateHeight(node) {
     let totalHeight = 2;
     for(let i=0; i<node.widgets.length; i++){
@@ -289,7 +390,7 @@ function register_map_range(nodeType, nodeData){
                     iv.label = "Vector";
                 }
                 this.graph.setDirtyCanvas(true);
-                recalculateHeight(this);
+                rearrange_inputs_and_widgets(this);
             }
         
         let w = this.widgets.find((w) => w.name == "Data Type");
@@ -310,7 +411,7 @@ function register_map_range(nodeType, nodeData){
                 }
 
                 this.graph.setDirtyCanvas(true);
-                recalculateHeight(this);
+                rearrange_inputs_and_widgets(this);
             }
             
         w = this.widgets.find((w) => w.name == "Interpolation Type");
@@ -406,7 +507,7 @@ function register_mix(nodeType, nodeData){
                 }
                 
                 this.graph.setDirtyCanvas(true);
-                recalculateHeight(this);
+                rearrange_inputs_and_widgets(this);
             }
         
         w_dtype.callback(w_dtype.value);
@@ -485,7 +586,7 @@ function register_math(nodeType, nodeData){
             }
 
             this.graph.setDirtyCanvas(true);
-            recalculateHeight(this);
+            rearrange_inputs_and_widgets(this);
         }
         
         w_operation.callback(w_operation.value);
@@ -513,6 +614,7 @@ app.registerExtension({
                 this.boxcolor = "#DDDDDD";
                 this.constructor.title_text_color = "#E8E8E8";
                 relabel_widgets(this);
+                rearrange_inputs_and_widgets(this);
                 return me;
             }
         }
