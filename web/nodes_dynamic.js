@@ -328,7 +328,7 @@ function register_mix(nodeType, nodeData){
                     __ADD_WIDGET(this, "FLOAT", "BG");
                     __ADD_WIDGET(this, "FLOAT", "BB");
                 }
-                console.log(this);
+                
                 this.graph.setDirtyCanvas(true);
                 recalculateHeight(this);
             }
@@ -339,9 +339,81 @@ function register_mix(nodeType, nodeData){
     }
 }
 
+const MATH_NAMEMAP = {
+    "Multiply Add": ["Value", "Multiplier", "Addend"],
+    "Power": ["Base", "Exponent"],
+    "Logarithm": ["Value", "Base"],
+    "Square Root": ["Value"],
+    "Inverse Square Root": ["Value"],
+    "Absolute": ["Value"],
+    "Exponent": ["Value"],
+    "Less Than": ["Value", "Threshold"],
+    "Greater Than": ["Value", "Threshold"],
+    "Sign": ["Value"],
+    "Compare": ["Value", "Value", "Epsilon"],
+    "Smooth Minimum": ["Value", "Value", "Distance"],
+    "Smooth Maximum": ["Value", "Value", "Distance"],
+    "Round": ["Value"],
+    "Floor": ["Value"],
+    "Ceil": ["Value"],
+    "Truncate": ["Value"],
+    "Fraction": ["Value"],
+    "Wrap": ["Value", "Min", "Max"],
+    "Snap": ["Value", "Increment"],
+    "Ping-Pong": ["Value", "Scale"],
+    "Sine": ["Value"],
+    "Cosine": ["Value"],
+    "Tangent": ["Value"],
+    "Arcsine": ["Value"],
+    "Arccosine": ["Value"],
+    "Arctangent": ["Value"],
+    "Hyperbolic Sine": ["Value"],
+    "Hyperbolic Cosine": ["Value"],
+    "Hyperbolic Tangent": ["Value"],
+    "To Radians": ["Degrees"],
+    "To Degrees": ["Radians"],
+}
+
+function register_math(nodeType, nodeData){
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+
+        let w_operation = this.widgets.find((w) => w.name == "Operation");
+
+        w_operation.callback = (widgetval) => {
+            this.title = widgetval;
+            let ins = MATH_NAMEMAP[widgetval];
+            if(!ins){
+                ins = ["Value", "Value"];
+            }
+            if(ins.length == 1){
+                REMOVE_FLOAT_INPUT(this, "B");
+                REMOVE_FLOAT_INPUT(this, "C");
+            }
+            if(ins.length == 2){
+                FLOAT_INPUT(this, "B");
+                REMOVE_FLOAT_INPUT(this, "C");
+            }
+            if(ins.length == 3){
+                FLOAT_INPUT(this, "B");
+                FLOAT_INPUT(this, "C");
+            }
+
+            this.graph.setDirtyCanvas(true);
+            recalculateHeight(this);
+        }
+        
+        w_operation.callback(w_operation.value);
+
+        return me;
+    }
+}
+
 const REGISTER_MAP = {
     "BlenderMapRange": register_map_range,
     "BlenderMix": register_mix,
+    "BlenderMath": register_math,
 }
 
 app.registerExtension({

@@ -89,7 +89,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Combine XYZ ✅</span></li>
 <li><span style="color:DimGrey">Float Curve -</span></li>
 <li><span style="color:LightGreen">Map Range ✅</span></li>
-<li><span style="color:GoldenRod">Math 🔵 (no dynamic inputs)</span></li>
+<li><span style="color:LightGreen">Math ✅</span></li>
 <li><span style="color:GoldenRod">Mix 🔵 (no non-uniform vector factor)</span></li>
 <li><span style="color:LightGreen">RGB to BW ✅</span></li>
 <li><span style="color:GoldenRod">Separate Color 🔵 (No colorspace option for YUV/YCbCr)</span></li>
