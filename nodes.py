@@ -239,18 +239,12 @@ class BlenderMapRange:
                 "Data Type": (["Float", "Vector"], ),
                 "Interpolation Type": (["Linear", "Stepped Linear", "Smooth Step", "Smoother Step"], ),
                 "Clamp": ("BOOLEAN", {"default": True}),
-                **FLOAT_INPUT("Value", 1.0, -inf, inf),
-                **FLOAT_INPUT("From Min Float", 0.0, -inf, inf),
-                **FLOAT_INPUT("From Max Float", 1.0, -inf, inf),
-                **FLOAT_INPUT("To Min Float", 0.0, -inf, inf),
-                **FLOAT_INPUT("To Max Float", 1.0, -inf, inf),
-                **VECTOR_INPUT("Vector", 0.0, hidden_default=True),
-                **VECTOR_INPUT("From Min Vector", 0.0),
-                **VECTOR_INPUT("From Max Vector", 1.0),
-                **VECTOR_INPUT("To Min Vector", 0.0),
-                **VECTOR_INPUT("To Max Vector", 1.0),
+                **VECTOR_INPUT("Value", 0.0),
+                **VECTOR_INPUT("From Min", 0.0),
+                **VECTOR_INPUT("From Max", 1.0),
+                **VECTOR_INPUT("To Min", 0.0),
+                **VECTOR_INPUT("To Max", 1.0),
                 **FLOAT_INPUT("Steps", 4.0, 0.00001, 1000000.0),
-                #"Test": ("FLOAT", {"default": 0.0, "step": 0.01, "min": -inf, "max": inf}),
             }
         }
     
@@ -267,29 +261,20 @@ class BlenderMapRange:
         dtype = kwargs["Data Type"]
         mode = kwargs["Interpolation Type"]
 
-        if dtype == "Float":
-            b_val = BlenderData(kwargs, "Value")
-            b_frommin = BlenderData(kwargs, "From Min Float")
-            b_frommax = BlenderData(kwargs, "From Max Float")
-            b_tomin = BlenderData(kwargs, "To Min Float")
-            b_tomax = BlenderData(kwargs, "To Max Float")
-            
-            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
+        b_val = BlenderData(kwargs, "Value", widget_override=kwargs["ValueX"] if dtype == "Float" else None)
+        b_frommin = BlenderData(kwargs, "From Min", widget_override=kwargs["From MinX"] if dtype == "Float" else None)
+        b_frommax = BlenderData(kwargs, "From Max", widget_override=kwargs["From MaxX"] if dtype == "Float" else None)
+        b_tomin = BlenderData(kwargs, "To Min", widget_override=kwargs["To MinX"] if dtype == "Float" else None)
+        b_tomax = BlenderData(kwargs, "To Max", widget_override=kwargs["To MaxX"] if dtype == "Float" else None)
+        guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
 
+        if dtype == "Float":
             val = b_val.as_float()
             frommin = b_frommin.as_float()
             frommax = b_frommax.as_float()
             tomin = b_tomin.as_float()
             tomax = b_tomax.as_float()
         elif dtype == "Vector":
-            b_val = BlenderData(kwargs, "Vector")
-            b_frommin = BlenderData(kwargs, "From Min Vector")
-            b_frommax = BlenderData(kwargs, "From Max Vector")
-            b_tomin = BlenderData(kwargs, "To Min Vector")
-            b_tomax = BlenderData(kwargs, "To Max Vector")
-            
-            guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
-
             val = b_val.as_rgb()
             frommin = b_frommin.as_rgb()
             frommax = b_frommax.as_rgb()

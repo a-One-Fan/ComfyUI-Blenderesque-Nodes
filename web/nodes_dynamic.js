@@ -238,6 +238,13 @@ function blender_node_color(name){
     return NODES_ALL[indices[0]].color;
 }
 
+function get_vec_widgets(node, name){
+    let wx = node.widgets.find((w) => w.name == (name+"X"));
+    let wy = node.widgets.find((w) => w.name == (name+"Y"));
+    let wz = node.widgets.find((w) => w.name == (name+"Z"));
+    return [wx, wy, wz];
+}
+
 function register_map_range(nodeType, nodeData){
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = async function () {
@@ -245,30 +252,41 @@ function register_map_range(nodeType, nodeData){
 
         this.widgets.find((w) => w.name == "Data Type").callback = 
             (widgetval) => {
+                let iv = this.inputs.find((i) => i.name == "Value");
+
+                let wfmin = get_vec_widgets(this, "From Min");
+                let wfmax = get_vec_widgets(this, "From Max");
+                let wtmin = get_vec_widgets(this, "To Min");
+                let wtmax = get_vec_widgets(this, "To Max");
+
+                const SUFFIXES = [" X", " Y", " Z"];
+
+                let all_wids = [wfmin, wfmax, wtmin, wtmax];
+
                 if(widgetval == "Float"){
-                    REMOVE_VECTOR_INPUT(this, "Vector");
-                    REMOVE_VECTOR_INPUT(this, "From Min Vector");
-                    REMOVE_VECTOR_INPUT(this, "From Max Vector");
-                    REMOVE_VECTOR_INPUT(this, "To Min Vector");
-                    REMOVE_VECTOR_INPUT(this, "To Max Vector");
+                    for(let i=0; i<all_wids.length; i++){
+                        for(let j=1; j<3; j++){
+                            __REMOVE_WIDGET(this, all_wids[i][j].name);
+                        }
+                        all_wids[i][0].label = all_wids[i][0].name.substr(0, all_wids[i][0].name.length-1);
+                    }
 
-                    FLOAT_INPUT(this, "Value");
-                    FLOAT_INPUT(this, "From Min Float");
-                    FLOAT_INPUT(this, "From Max Float");
-                    FLOAT_INPUT(this, "To Min Float");
-                    FLOAT_INPUT(this, "To Max Float");
+                    __ADD_WIDGET(this, "FLOAT", "ValueX", "Value");
+                    __REMOVE_WIDGET(this, "ValueY");
+                    __REMOVE_WIDGET(this, "ValueZ");
+                    iv.label = "Value";
                 }else{
-                    REMOVE_FLOAT_INPUT(this, "Value");
-                    REMOVE_FLOAT_INPUT(this, "From Min Float");
-                    REMOVE_FLOAT_INPUT(this, "From Max Float");
-                    REMOVE_FLOAT_INPUT(this, "To Min Float");
-                    REMOVE_FLOAT_INPUT(this, "To Max Float");
+                    for(let i=0; i<all_wids.length; i++){
+                        for(let j=0; j<3; j++){
+                            let name = all_wids[i][j].name;
+                            __ADD_WIDGET(this, "FLOAT", name, name.substr(0, name.length-1) + SUFFIXES[j]);
+                        }
+                    }
 
-                    VECTOR_INPUT(this, "Vector", 0.0, COLSTEP, -inf, inf, true);
-                    VECTOR_INPUT(this, "From Min Vector");
-                    VECTOR_INPUT(this, "From Max Vector");
-                    VECTOR_INPUT(this, "To Min Vector");
-                    VECTOR_INPUT(this, "To Max Vector");
+                    __ADD_WIDGET(this, "FLOAT", "ValueX", "Value X");
+                    __ADD_WIDGET(this, "FLOAT", "ValueY", "Value Y");
+                    __ADD_WIDGET(this, "FLOAT", "ValueZ", "Value Z");
+                    iv.label = "Vector";
                 }
                 this.graph.setDirtyCanvas(true);
                 recalculateHeight(this);

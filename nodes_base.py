@@ -18,7 +18,9 @@ class BlenderData:
         - kwargs, parameter name -> Guess automatically
         - BlenderData (copies by reference)
         - number
-        - 2/3/4-dim tuple of numbers e.g. (1.0, 1.0, 0.0) 
+        - 2/3/4-dim tuple of numbers e.g. (1.0, 1.0, 0.0)\n
+        widget_override: Instead of looking for a widget value, use this value directly\n
+        default_notfound: Value to use when no widgets or inputs are found
         """
 
         if colortransform_force != None:
