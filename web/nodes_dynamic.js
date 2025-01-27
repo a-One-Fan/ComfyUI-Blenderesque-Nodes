@@ -280,7 +280,7 @@ function register_map_range(nodeType, nodeData){
         this.widgets.find((w) => w.name == "Interpolation Type").callback = 
             (widgetval) => {
                 if(["Linear", "Stepped Linear"].includes(widgetval)){
-                    __ADD_WIDGET(this, "BOOLEAN", "Clamp", true);
+                    __ADD_WIDGET(this, "BOOLEAN", "Clamp", "Clamp", true);
                 }else{
                     __REMOVE_WIDGET(this, "Clamp");
                 }
