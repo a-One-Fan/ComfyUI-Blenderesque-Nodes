@@ -261,11 +261,11 @@ class BlenderMapRange:
         dtype = kwargs["Data Type"]
         mode = kwargs["Interpolation Type"]
 
-        b_val = BlenderData(kwargs, "Value", widget_override=kwargs["ValueX"] if dtype == "Float" else None)
-        b_frommin = BlenderData(kwargs, "From Min", widget_override=kwargs["From MinX"] if dtype == "Float" else None)
-        b_frommax = BlenderData(kwargs, "From Max", widget_override=kwargs["From MaxX"] if dtype == "Float" else None)
-        b_tomin = BlenderData(kwargs, "To Min", widget_override=kwargs["To MinX"] if dtype == "Float" else None)
-        b_tomax = BlenderData(kwargs, "To Max", widget_override=kwargs["To MaxX"] if dtype == "Float" else None)
+        b_val = BlenderData(kwargs, "Value", widget_override=kwargs.get("ValueX") if dtype == "Float" else None)
+        b_frommin = BlenderData(kwargs, "From Min", widget_override=kwargs.get("From MinX") if dtype == "Float" else None)
+        b_frommax = BlenderData(kwargs, "From Max", widget_override=kwargs.get("From MaxX") if dtype == "Float" else None)
+        b_tomin = BlenderData(kwargs, "To Min", widget_override=kwargs.get("To MinX") if dtype == "Float" else None)
+        b_tomax = BlenderData(kwargs, "To Max", widget_override=kwargs.get("To MaxX") if dtype == "Float" else None)
         guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
 
         if dtype == "Float":
@@ -896,8 +896,8 @@ class BlenderMix:
         clamp_fac = kwargs["Clamp Factor"]
 
         b_fac = BlenderData(kwargs, "Factor")
-        b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color", widget_override=kwargs["AR"] if dtype=="Float" else None)
-        b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color", widget_override=kwargs["BR"] if dtype=="Float" else None)
+        b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color", widget_override=kwargs.get("AR") if dtype=="Float" else None)
+        b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color", widget_override=kwargs.get("BR") if dtype=="Float" else None)
         guess_canvas(b_fac, b_a, b_b)
 
 

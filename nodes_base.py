@@ -69,7 +69,7 @@ class BlenderData:
             if type(any.get(paramname)) is torch.Tensor:
                 self.image = color_transform(any[paramname])
                 self.canvas = (self.image.size()[1], self.image.size()[2])
-            if type(any.get(paramname)) is BlenderData:
+            elif type(any.get(paramname)) is BlenderData:
                 other = any[paramname]
                 self.image = other.image
                 self.canvas = other.canvas
