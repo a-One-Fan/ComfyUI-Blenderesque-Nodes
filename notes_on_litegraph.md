@@ -7,3 +7,7 @@ Default = Full circle
 5 = |>
 6 = mini 3x3 grid of squares
 7 = Circle with hole
+
+Socket colors:
+color_on
+color_off

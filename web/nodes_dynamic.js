@@ -16,6 +16,19 @@ const inf = 100000000;
 const CONVERTED_TYPE = "converted-widget";
 const GET_CONFIG = Symbol();
 
+const COLOR_RGB_CONNECTED = "#C7C729"
+const COLOR_RGB_DISCONNECTED = COLOR_RGB_CONNECTED
+const COLOR_VEC_CONNECTED = "#6363C7"
+const COLOR_VEC_DISCONNECTED = COLOR_VEC_CONNECTED
+const COLOR_FLOAT_CONNECTED = "#A1A1A1"
+const COLOR_FLOAT_DISCONNECTED = COLOR_FLOAT_CONNECTED
+const COLOR_BOOL_CONNECTED = "#CCA6D6"
+const COLOR_BOOL_DISCONNECTED = COLOR_BOOL_CONNECTED
+const COLOR_IMAGE_CONNECTED = "#633863"
+const COLOR_IMAGE_DISCONNECTED = COLOR_IMAGE_CONNECTED
+
+const COLOR_DISABLED = "#00000088"
+
 // TODO: Import these?
 function hideWidget(node, widget, suffix = "") {
     if (widget.type?.startsWith(CONVERTED_TYPE)) return;
@@ -163,6 +176,11 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
             let desired_label = ordered[i][0].name;
             if(ordered[i][0].backupLabel) {
                 desired_label = ordered[i][0].backupLabel;
+                ordered[i][0].shape = 0;
+                ordered[i][0].color_on = COLOR_DISABLED;
+                ordered[i][0].color_off = COLOR_DISABLED;
+            }else{
+                ordered[i][0].shape = 0;
             }
             ordered[i][0].label = desired_label;
         } else {
@@ -177,6 +195,24 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                 wids[j].y = currentHeight;
                 currentHeight += 24;
             }
+            if(ordered[i][0].color_hint){
+                ordered[i][0].color_on = ordered[i][0].color_hint;
+                ordered[i][0].color_off = ordered[i][0].color_hint;
+            }else{
+                if(wids[0].name.endsWith("R")){
+                    ordered[i][0].color_on = COLOR_RGB_CONNECTED;
+                    ordered[i][0].color_off = COLOR_RGB_DISCONNECTED;
+                }
+                if(wids[0].name.endsWith("X")){
+                    ordered[i][0].color_on = COLOR_VEC_CONNECTED;
+                    ordered[i][0].color_off = COLOR_VEC_DISCONNECTED;
+                }
+                if(wids[0].name.endsWith("F")){
+                    ordered[i][0].color_on = COLOR_FLOAT_CONNECTED;
+                    ordered[i][0].color_off = COLOR_FLOAT_DISCONNECTED;
+                }
+            }
+            ordered[i][0].shape = 0;
             currentHeight -= (ordered[i][2] > 0) * 24;
         }
         currentHeight += 24;
@@ -386,6 +422,13 @@ function register_map_range(nodeType, nodeData) {
             (widgetval) => {
                 let iv = this.inputs.find((i) => i.name == "Value");
 
+                let ifmin = this.inputs.find((i) => i.name == "From Min");
+                let ifmax = this.inputs.find((i) => i.name == "From Max");
+                let itmin = this.inputs.find((i) => i.name == "To Min");
+                let itmax = this.inputs.find((i) => i.name == "To Max");
+
+                let all_ins = [iv, ifmin, ifmax, itmin, itmax];
+
                 let wfmin = get_vec_widgets(this, "From Min");
                 let wfmax = get_vec_widgets(this, "From Max");
                 let wtmin = get_vec_widgets(this, "To Min");
@@ -407,6 +450,10 @@ function register_map_range(nodeType, nodeData) {
                     __REMOVE_WIDGET(this, "ValueY");
                     __REMOVE_WIDGET(this, "ValueZ");
                     iv.label = "Value";
+
+                    for(let i=0; i<all_ins.length; i++) {
+                        all_ins[i].color_hint = COLOR_FLOAT_CONNECTED;
+                    }
                 }else{
                     for(let i=0; i<all_wids.length; i++) {
                         for(let j=0; j<3; j++) {
@@ -419,6 +466,10 @@ function register_map_range(nodeType, nodeData) {
                     __ADD_WIDGET(this, "FLOAT", "ValueY", "Value Y");
                     __ADD_WIDGET(this, "FLOAT", "ValueZ", "Value Z");
                     iv.label = "Vector";
+
+                    for(let i=0; i<all_ins.length; i++) {
+                        all_ins[i].color_hint = COLOR_VEC_CONNECTED;
+                    }
                 }
                 this.graph.setDirtyCanvas(true);
                 rearrange_inputs_and_widgets(this);
