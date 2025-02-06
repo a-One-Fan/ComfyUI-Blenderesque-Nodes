@@ -33,30 +33,39 @@ Hopefully in the future I'll look into integrating this with https://github.com/
 <summary>Meta/Bugs/TODO</summary>
 <ul>
 <li><span style="color:IndianRed">Integrate with https://github.com/AIGODLIKE/ComfyUI-BlenderAI-node ❌</span></li>
-<li><span style="color:IndianRed">Dynamic inputs ❌</span></li>
+<li><span style="color:GoldenRod">Dynamic inputs 🔵</span></li>
 <li><span style="color:GoldenRod">Dynamic widgets 🔵</span></li>
-<li><span style="color:IndianRed">UV Input Node (For mapping textures) ❌</span></li>
-<li><span style="color:IndianRed">Resize Canvas Node ❌</span></li>
-<li><span style="color:IndianRed">Extract Data Node (Get image, mask, canvas xy, float, etc.) ❌</span></li>
-<li><span style="color:IndianRed">Merged input sockets and default values ("widgets") ❌</span></li>
+<li><span style="color:LightGreen">Merged input sockets and default values ("widgets") ✅</span></li>
 <li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
 </ul>
 </details>
 
 <details>
-<summary>Input</summary>
+<summary>New Comfy-Specific Nodes 0/2 and new functionality to old nodes</summary>
+<li><span style="color:IndianRed">Input/UV ❌</span></li>
+Creates a basic UV gradient for mapping other textures with.
+<li><span style="color:IndianRed">Converter/Extract Data ❌</span></li>
+Convert Blender Data to float, image, or get its canvas size.
+<br>
+<br>
+Functionality:
+<li><span style="color:IndianRed">Transform/Crop - Uncrop and auto rescale ❌</span></li>
+<li><span style="color:IndianRed">Transform/Lens Distortion - Handle alpha ❌</span></li>
+</details>
+
+<details>
+<summary>Input 2/3</summary>
 <ul>
 <li><span style="color:LightGreen">Value ✅</span></li>
 <li><span style="color:LightGreen">RGB ✅</span></li>
 <li><span style="color:IndianRed">Bokeh Image ❌</span></li>
-<li><span style="color:IndianRed">UV Node (For mapping textures) ❌</span></li>
 Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
 <details>
-<summary>Color</summary>
+<summary>Color 6/12</summary>
 <ul>
 <li><span style="color:LightGreen">Brightness/Contrast ✅</span></li>
 <li><span style="color:LightGreen">Gamma ✅</span></li>
@@ -80,7 +89,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Converter</summary>
+<summary>Converter 11/12</summary>
 <ul>
 <li><span style="color:GoldenRod">Blackbody 🔵 (Missing rec709->linear, very minor color difference)</span></li>
 <li><span style="color:LightGreen">Clamp ✅</span></li>
@@ -96,13 +105,11 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Separate XYZ ✅</span></li>
 <li><span style="color:IndianRed">Vector Math ❌</span></li>
 <li><span style="color:LightGreen">Wavelength ✅</span></li>
-<br>
-<li><span style="color:IndianRed">Extract Data ❌</span></li>
 </ul>
 </details>
 
 <details>
-<summary>Transform</summary>
+<summary>Transform 5/11</summary>
 <ul>
 <li><span style="color:GoldenRod">Rotate 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:GoldenRod">Scale 🔵 (No bicubic interpolation)</span></li>
@@ -119,7 +126,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Texture</summary>
+<summary>Texture 0/9</summary>
 <ul>
 <li><span style="color:IndianRed"> Brick Texture ❌</span></li>
 <li><span style="color:IndianRed"> Checker Texture ❌</span></li>
@@ -134,7 +141,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Filter</summary>
+<summary>Filter 0/10</summary>
 <ul>
 <li><span style="color:IndianRed"> Whatever blurs I can implement ❌</span></li>
 <li><span style="color:IndianRed"> Anti-Aliasing ❌</span></li>
@@ -149,4 +156,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 23/56
+Implemented nodes: 24/59
