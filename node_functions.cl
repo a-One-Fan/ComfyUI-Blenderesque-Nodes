@@ -1,17 +1,17 @@
-float maprange(float val, float oldmin, float oldmax, float newmin, float newmax){
+float maprange(float val, float oldmin, float oldmax, float newmin, float newmax) {
     float fac = (val - oldmin) / (oldmax - oldmin);
     return newmin + fac*(newmax - newmin);
 }
 
-float lerp(float a, float b, float fac){
+float lerp(float a, float b, float fac) {
     return a*(1.0f-fac) + b*fac;
 }
 
-float4 lerp4(float4 a, float4 b, float fac){
+float4 lerp4(float4 a, float4 b, float fac) {
     return a*(1.0f-fac) + b*fac;
 }
 
-float4 simple_sample(__global const float* tex, float uvx, float uvy, int resx, int resy){
+float4 simple_sample(__global const float* tex, float uvx, float uvy, int resx, int resy) {
     int pixx = uvx * resx;
     int pixy = (int)(uvy * resy) * resx;
 
@@ -21,26 +21,26 @@ float4 simple_sample(__global const float* tex, float uvx, float uvy, int resx, 
 }
 
 // fmod that properly repeats <0
-float repeatmod(float val, float div){
-    if(val < 0.0f){
+float repeatmod(float val, float div) {
+    if(val < 0.0f) {
         return div+fmod(val, div);
     }
     return fmod(val, div);
 }
 
 // mod that repeats like /\/\/\/\/\/
-float mirror(float val, float step){
+float mirror(float val, float step) {
     return fabs(repeatmod(val+step, step*2.0f)-step);
 }
 
 float4 sample(__global const float* tex, float uvx, float uvy, int resx, int resy, 
-                int interp, int extend){
+                int interp, int extend) {
 
     float uvxmax = (float)(resx-1)/(float)(resx);
     float uvymax = (float)(resy-1)/(float)(resy);
-    switch(extend){
+    switch(extend) {
         case 0: // clip
-            if(uvx < 0.0f || uvx >= 1.0f || uvy < 0.0f || uvy >= 1.0f){
+            if(uvx < 0.0f || uvx >= 1.0f || uvy < 0.0f || uvy >= 1.0f) {
                 return (float4)(0.0f, 0.0f, 0.0f, 0.0f);
             }
             break;
@@ -57,10 +57,10 @@ float4 sample(__global const float* tex, float uvx, float uvy, int resx, int res
             uvy = mirror(uvy, 1.0f);
     }
 
-    if(interp == 0){ // closest
+    if(interp == 0) { // closest
         return simple_sample(tex, round(uvx*resx)/resx, round(uvy*resy)/resy, resx, resy);
     }
-    if(interp == 1){ // linear
+    if(interp == 1) { // linear
         float uvx1 = clamp(uvx+1.0f/(float)resx, 0.0f, uvxmax);
         float uvy1 = clamp(uvy+1.0f/(float)resy, 0.0f, uvymax);
 
@@ -80,8 +80,8 @@ float4 sample(__global const float* tex, float uvx, float uvy, int resx, int res
     // cubic... later
     float4 samples[4][4];
     float newuvx, newuvy;
-    for(int i=0; i<4; i++){
-        for(int j=0; j<4; j++){
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<4; j++) {
             newuvx = clamp(uvx+(float)i/(float)resx, 0.0f, uvxmax);
             newuvy = clamp(uvx+(float)i/(float)resx, 0.0f, uvymax);
             samples[i][j] = simple_sample(tex, newuvx, newuvy, resx, resy);
@@ -91,7 +91,7 @@ float4 sample(__global const float* tex, float uvx, float uvy, int resx, int res
 }
 
 __kernel void transform(__global const float *in_img, const int inx, const int iny, const int outx, const int outy,
-    __global const float *locrotscale, const int interp, const int extend, __global float *res_floats){
+    __global const float *locrotscale, const int interp, const int extend, __global float *res_floats) {
 
     int gid = get_global_id(0);
 
