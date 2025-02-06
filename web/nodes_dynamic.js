@@ -59,17 +59,17 @@ const WIDGET_SUFFIXES = ["F", "R", "G", "B", "A", "X", "Y", "Z"];
 const SOLO_WIDGET = "solo_widget";
 const SOLO_INPUT = "solo_input";
 const INPUT_DELETED_NAME = "X";
-function get_inputs_widgets_as_pairlist(node, preferred_order = []){
+function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
     let pairs = [];
-    for(let i=0; i<node.inputs.length; i++){
+    for(let i=0; i<node.inputs.length; i++) {
         let inp = node.inputs[i];
         let found_widgets = [];
         let real_widgets = 0;
-        for(let j=0; j<node.widgets.length; j++){
+        for(let j=0; j<node.widgets.length; j++) {
             let w = node.widgets[j];
-            for(let k=0; k<WIDGET_SUFFIXES.length; k++){
-                if(w.name == inp.name+WIDGET_SUFFIXES[k]){
-                    if(w.type != CONVERTED_TYPE){
+            for(let k=0; k<WIDGET_SUFFIXES.length; k++) {
+                if(w.name == inp.name+WIDGET_SUFFIXES[k]) {
+                    if(w.type != CONVERTED_TYPE) {
                         real_widgets++;
                     }
                     found_widgets.push(w);
@@ -77,7 +77,7 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []){
                 }
             }
         }
-        if(found_widgets.length > 0){
+        if(found_widgets.length > 0) {
             pairs.push([inp, found_widgets, real_widgets]);
         }else{
             pairs.push([inp, SOLO_INPUT]);
@@ -85,22 +85,22 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []){
     }
 
     let inputless_widgets = [];
-    for(let i=0; i<node.widgets.length; i++){
-        if(node.widgets[i].type == CONVERTED_TYPE){
+    for(let i=0; i<node.widgets.length; i++) {
+        if(node.widgets[i].type == CONVERTED_TYPE) {
             continue;
         }
         let found=false;
-        for(let j=0; j<pairs.length && !found; j++){
-            if(pairs[j][1] != SOLO_INPUT){
-                for(let k=0; k<pairs[j][1].length; k++){
-                    if(pairs[j][1][k].name == node.widgets[i].name){
+        for(let j=0; j<pairs.length && !found; j++) {
+            if(pairs[j][1] != SOLO_INPUT) {
+                for(let k=0; k<pairs[j][1].length; k++) {
+                    if(pairs[j][1][k].name == node.widgets[i].name) {
                         found = true;
                         break;
                     }
                 }
             }
         }
-        if(!found){
+        if(!found) {
             inputless_widgets.push([node.widgets[i], SOLO_WIDGET]);
         }
     }
@@ -108,9 +108,9 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []){
     pairs = inputless_widgets.concat(pairs);
 
     let ordered = [];
-    for(let i=0; i<preferred_order.length; i++){
-        for(let j=0; j<pairs.length; j++){
-            if(pairs[j][0].name == preferred_order[i]){
+    for(let i=0; i<preferred_order.length; i++) {
+        for(let j=0; j<pairs.length; j++) {
+            if(pairs[j][0].name == preferred_order[i]) {
                 ordered.push(pairs[j]);
                 break;
             }
@@ -124,21 +124,21 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []){
 function rearrange_inputs_and_widgets(node, preferred_order = []) {
     let ordered = get_inputs_widgets_as_pairlist(node, preferred_order);
 
-    for(let i=0; i<ordered.length; i++){
-        if([SOLO_INPUT, SOLO_WIDGET].includes(ordered[i][1])){
+    for(let i=0; i<ordered.length; i++) {
+        if([SOLO_INPUT, SOLO_WIDGET].includes(ordered[i][1])) {
             continue;
         }
 
         if(ordered[i][0].link != undefined && ordered[i][2] > 0) { // Must hide widgets
             let real_wids = [];
-            for(let j=0;j<ordered[i][1].length;j++){
+            for(let j=0;j<ordered[i][1].length;j++) {
                 let w = ordered[i][1][j];
-                if(w.type != CONVERTED_TYPE){
+                if(w.type != CONVERTED_TYPE) {
                     real_wids.push(w);
                 }
             }
             ordered[i][0].origVisibleWidgets = real_wids;
-            for(let j=0; j<real_wids.length; j++){
+            for(let j=0; j<real_wids.length; j++) {
                 hideWidget(node, real_wids[j]);
             }
             ordered[i][2] = 0;
@@ -146,7 +146,7 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
 
         if(ordered[i][0].link == undefined && ordered[i][0].origVisibleWidgets) { // Must reveal hidden widgets
             let real_wids = ordered[i][0].origVisibleWidgets;
-            for(let j=0; j<real_wids.length; j++){
+            for(let j=0; j<real_wids.length; j++) {
                 showWidget(real_wids[j]);
             }
             ordered[i][2] += ordered[i][0].origVisibleWidgets.length;
@@ -155,13 +155,13 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
     }
 
     let currentHeight = node.outputs.length * 24 + 6;
-    for(let i=0; i<ordered.length; i++){
-        if(ordered[i][1] == SOLO_WIDGET){
+    for(let i=0; i<ordered.length; i++) {
+        if(ordered[i][1] == SOLO_WIDGET) {
             ordered[i][0].y = currentHeight;
-        } else if (ordered[i][1] == SOLO_INPUT || ordered[i][2] == 0){
+        } else if (ordered[i][1] == SOLO_INPUT || ordered[i][2] == 0) {
             ordered[i][0].pos = [0, currentHeight+10.5];
             let desired_label = ordered[i][0].name;
-            if(ordered[i][0].backupLabel){
+            if(ordered[i][0].backupLabel) {
                 desired_label = ordered[i][0].backupLabel;
             }
             ordered[i][0].label = desired_label;
@@ -170,8 +170,8 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
             ordered[i][0].pos = [0, currentHeight+10.5];
 
             let wids=ordered[i][1];
-            for(let j=0; j<wids.length; j++){
-                if(wids[j].type == CONVERTED_TYPE){
+            for(let j=0; j<wids.length; j++) {
+                if(wids[j].type == CONVERTED_TYPE) {
                     continue;
                 }
                 wids[j].y = currentHeight;
@@ -187,29 +187,29 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
 
 function recalculateHeight(node) {
     let totalHeight = 2;
-    for(let i=0; i<node.widgets.length; i++){
+    for(let i=0; i<node.widgets.length; i++) {
         let size = 24;
         size *= node.widgets[i].type != CONVERTED_TYPE
         totalHeight += size;
     } 
-    for(let i=0; i<node.inputs.length; i++){
+    for(let i=0; i<node.inputs.length; i++) {
         totalHeight += 21;
     }
     node._size[1] = totalHeight;
 }
 
 // TODO: Better names?
-function __REMOVE_INPUT(obj, name){
+function __REMOVE_INPUT(obj, name) {
     let ii = obj.inputs.findIndex((i) => i.name == name);
     let i = obj.inputs[ii];
     // Do something
     i.backupLabel = INPUT_DELETED_NAME;
 }
 
-function __ADD_INPUT(obj, name, type=0){
+function __ADD_INPUT(obj, name, type=0) {
     let ii = obj.inputs.findIndex((i) => i.name == name);
     let i = null;
-    if (ii == -1){
+    if (ii == -1) {
         i = obj.addInput(name, type);
     }else{
         i = obj.inputs[ii];
@@ -217,24 +217,24 @@ function __ADD_INPUT(obj, name, type=0){
     i.backupLabel = undefined;
 }
 
-function __REMOVE_WIDGET(obj, name){
+function __REMOVE_WIDGET(obj, name) {
     let w = obj.widgets.find((i) => i.name == name);
-    if(w == null){
+    if(w == null) {
         return;
     }
     hideWidget(obj, w);
 }
 
-function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = () => {}, properties = {}){
-    if(type == "FLOAT"){
+function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = () => {}, properties = {}) {
+    if(type == "FLOAT") {
         type = "number";
     }
-    if(["BOOLEAN", "BOOL"].includes(type)){
+    if(["BOOLEAN", "BOOL"].includes(type)) {
         type = "toggle";
     }
     let wi = obj.widgets.findIndex((w) => w.name == name);
     let w = null;
-    if (wi == -1){
+    if (wi == -1) {
         w = obj.addWidget(type, name, def, callback, properties, {min: min, max: max, step: step});
         w.label = label;
     }else{
@@ -245,45 +245,45 @@ function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = ()
     }
 }
 
-function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false){
+function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false) {
     __ADD_INPUT(obj, name, 0);
-    if (hidden_default){
+    if (hidden_default) {
         return;
     }
     __ADD_WIDGET(obj, "FLOAT", name + "R", name + " Red", def, min, max, step);
     __ADD_WIDGET(obj, "FLOAT", name + "G", name + " Green", def, min, max, step);
     __ADD_WIDGET(obj, "FLOAT", name + "B", name + " Blue", def, min, max, step);
-    if(alpha){
+    if(alpha) {
         __ADD_WIDGET(obj, "FLOAT", name + "A", name + " Alpha", def);
     }
 }
 
-function REMOVE_COLOR_INPUT(obj, name, alpha=false){
+function REMOVE_COLOR_INPUT(obj, name, alpha=false) {
     __REMOVE_INPUT(obj, name);
     __REMOVE_WIDGET(obj, name+"R");
     __REMOVE_WIDGET(obj, name+"G");
     __REMOVE_WIDGET(obj, name+"B");
-    if(alpha){
+    if(alpha) {
         __REMOVE_WIDGET(obj, name+"A");
     }
 }
 
-function FLOAT_INPUT(obj, name, def=0.0, min=0.0, max=1.0, step=COLSTEP, hidden_default=false){
+function FLOAT_INPUT(obj, name, def=0.0, min=0.0, max=1.0, step=COLSTEP, hidden_default=false) {
     __ADD_INPUT(obj, name, 0);
-    if (hidden_default){
+    if (hidden_default) {
         return;
     }
     __ADD_WIDGET(obj, "FLOAT", name+"F", name, def, min, max, step);
 }
 
-function REMOVE_FLOAT_INPUT(obj, name){
+function REMOVE_FLOAT_INPUT(obj, name) {
     __REMOVE_INPUT(obj, name);
     __REMOVE_WIDGET(obj, name+"F");
 }
 
-function VECTOR_INPUT(obj, name, def=0.0, step=COLSTEP, min=-inf, max=inf, hidden_default=false){
+function VECTOR_INPUT(obj, name, def=0.0, step=COLSTEP, min=-inf, max=inf, hidden_default=false) {
     __ADD_INPUT(obj, name, 0);
-    if (hidden_default){
+    if (hidden_default) {
         return;
     }
     __ADD_WIDGET(obj, "FLOAT", name+"X", name + " X", def, min, max, step);
@@ -291,7 +291,7 @@ function VECTOR_INPUT(obj, name, def=0.0, step=COLSTEP, min=-inf, max=inf, hidde
     __ADD_WIDGET(obj, "FLOAT", name+"Z", name + " Z", def, min, max, step);
 }
 
-function REMOVE_VECTOR_INPUT(obj, name){
+function REMOVE_VECTOR_INPUT(obj, name) {
     __REMOVE_INPUT(obj, name);
     __REMOVE_WIDGET(obj, name+"X");
     __REMOVE_WIDGET(obj, name+"Y");
@@ -309,13 +309,13 @@ const RELABEL_MAP = {
     "Z": " Z",
 }
 
-function relabel_widgets(node){
-    for(let i=0; i<node.widgets.length; i++){
+function relabel_widgets(node) {
+    for(let i=0; i<node.widgets.length; i++) {
         let w = node.widgets[i];
 
         let last = w.name[w.name.length-1];
         let mapped = RELABEL_MAP[last];
-        if(mapped != undefined){
+        if(mapped != undefined) {
             w.label = w.name.substr(0, w.name.length-1) + mapped;
         }
     }
@@ -353,10 +353,10 @@ const NODES_ALL = [
     {nodes: 0, color: "#3C3C83"}, // 6 Vector nodes?
 ];
 
-function find_blender_node(name){
-    for(let i=0; i<NODES_ALL.length; i++){
-        for(let j=0; j<NODES_ALL[i].nodes.length; j++){
-            if (name == NODES_ALL[i].nodes[j]){
+function find_blender_node(name) {
+    for(let i=0; i<NODES_ALL.length; i++) {
+        for(let j=0; j<NODES_ALL[i].nodes.length; j++) {
+            if (name == NODES_ALL[i].nodes[j]) {
                 return [i, j];
             }
         }
@@ -365,19 +365,19 @@ function find_blender_node(name){
     return null;
 }
 
-function blender_node_color(name){
+function blender_node_color(name) {
     let indices = find_blender_node(name);
     return NODES_ALL[indices[0]].color;
 }
 
-function get_vec_widgets(node, name){
+function get_vec_widgets(node, name) {
     let wx = node.widgets.find((w) => w.name == (name+"X"));
     let wy = node.widgets.find((w) => w.name == (name+"Y"));
     let wz = node.widgets.find((w) => w.name == (name+"Z"));
     return [wx, wy, wz];
 }
 
-function register_map_range(nodeType, nodeData){
+function register_map_range(nodeType, nodeData) {
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = async function () {
         const me = await onNodeCreated?.apply(this);
@@ -395,9 +395,9 @@ function register_map_range(nodeType, nodeData){
 
                 let all_wids = [wfmin, wfmax, wtmin, wtmax];
 
-                if(widgetval == "Float"){
-                    for(let i=0; i<all_wids.length; i++){
-                        for(let j=1; j<3; j++){
+                if(widgetval == "Float") {
+                    for(let i=0; i<all_wids.length; i++) {
+                        for(let j=1; j<3; j++) {
                             __REMOVE_WIDGET(this, all_wids[i][j].name);
                         }
                         all_wids[i][0].label = all_wids[i][0].name.substr(0, all_wids[i][0].name.length-1);
@@ -408,8 +408,8 @@ function register_map_range(nodeType, nodeData){
                     __REMOVE_WIDGET(this, "ValueZ");
                     iv.label = "Value";
                 }else{
-                    for(let i=0; i<all_wids.length; i++){
-                        for(let j=0; j<3; j++){
+                    for(let i=0; i<all_wids.length; i++) {
+                        for(let j=0; j<3; j++) {
                             let name = all_wids[i][j].name;
                             __ADD_WIDGET(this, "FLOAT", name, name.substr(0, name.length-1) + SUFFIXES[j]);
                         }
@@ -429,13 +429,13 @@ function register_map_range(nodeType, nodeData){
 
         this.widgets.find((w) => w.name == "Interpolation Type").callback = 
             (widgetval) => {
-                if(["Linear", "Stepped Linear"].includes(widgetval)){
+                if(["Linear", "Stepped Linear"].includes(widgetval)) {
                     __ADD_WIDGET(this, "BOOLEAN", "Clamp", "Clamp", true);
                 }else{
                     __REMOVE_WIDGET(this, "Clamp");
                 }
 
-                if(widgetval == "Stepped Linear"){
+                if(widgetval == "Stepped Linear") {
                     FLOAT_INPUT(this, "Steps", 4.0, 0.0);
                 }else{
                     REMOVE_FLOAT_INPUT(this, "Steps");
@@ -452,7 +452,7 @@ function register_map_range(nodeType, nodeData){
     }
 }
 
-function register_mix(nodeType, nodeData){
+function register_mix(nodeType, nodeData) {
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = async function () {
         const me = await onNodeCreated?.apply(this);
@@ -464,7 +464,7 @@ function register_mix(nodeType, nodeData){
             this.title = widgetval;
         }
 
-        if (w_dtype == "Color"){
+        if (w_dtype == "Color") {
             w_blendmode.callback(w_blendmode.value);
         }
 
@@ -511,20 +511,20 @@ function register_mix(nodeType, nodeData){
                     war.label = "A";
                     wbr.label = "B";
                     
-                    if(ia.origVisibleWidgets){
+                    if(ia.origVisibleWidgets) {
                         ia.origVisibleWidgets = [war]
                     }
-                    if(ib.origVisibleWidgets){
+                    if(ib.origVisibleWidgets) {
                         ib.origVisibleWidgets = [wbr]
                     }
                 }else{
-                    if(ia.link){
+                    if(ia.link) {
                         ia.origVisibleWidgets = [war, wag, wab]
                     }else{
                         __ADD_WIDGET(this, "FLOAT", "AG");
                         __ADD_WIDGET(this, "FLOAT", "AB");
                     }
-                    if(ib.link){
+                    if(ib.link) {
                         ib.origVisibleWidgets = [wbr, wbg, wbb]
                     }else{
                         __ADD_WIDGET(this, "FLOAT", "BG");
@@ -599,7 +599,7 @@ const MATH_NAMEMAP = {
     "To Degrees": ["Radians"],
 }
 
-function register_math(nodeType, nodeData){
+function register_math(nodeType, nodeData) {
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = async function () {
         const me = await onNodeCreated?.apply(this);
@@ -609,27 +609,27 @@ function register_math(nodeType, nodeData){
         w_operation.callback = (widgetval) => {
             this.title = widgetval;
             let ins = MATH_NAMEMAP[widgetval];
-            if(!ins){
+            if(!ins) {
                 ins = ["Value", "Value"];
             }
             let wa = this.widgets.find((w) => w.name == "AF");
             let wb = this.widgets.find((w) => w.name == "BF");
             let wc = this.widgets.find((w) => w.name == "CF");
             let wabc = [wa, wb, wc];
-            if(ins.length == 1){
+            if(ins.length == 1) {
                 REMOVE_FLOAT_INPUT(this, "B");
                 REMOVE_FLOAT_INPUT(this, "C");
             }
-            if(ins.length == 2){
+            if(ins.length == 2) {
                 FLOAT_INPUT(this, "B");
                 REMOVE_FLOAT_INPUT(this, "C");
             }
-            if(ins.length == 3){
+            if(ins.length == 3) {
                 FLOAT_INPUT(this, "B");
                 FLOAT_INPUT(this, "C");
             }
 
-            for(let i=0; i<ins.length; i++){
+            for(let i=0; i<ins.length; i++) {
                 wabc[i].label = ins[i];
             }
 
@@ -653,7 +653,7 @@ app.registerExtension({
 	name: EXTENSION_NAME,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 
-        if (find_blender_node(nodeData.name) != null){
+        if (find_blender_node(nodeData.name) != null) {
             const onNodeCreatedPrev = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = async function () {
                 const me = await onNodeCreatedPrev?.apply(this);
@@ -666,7 +666,7 @@ app.registerExtension({
 
                 const onConnectionsChangePrev = this.onConnectionsChange;
                 this.onConnectionsChange = async function (eventtype, slotid, is_connect, link_info, input) {
-                    if(onConnectionsChangePrev){
+                    if(onConnectionsChangePrev) {
                         await onConnectionsChangePrev(eventtype, slotid, is_connect, link_info, input);
                     }
                     rearrange_inputs_and_widgets(this);
@@ -676,7 +676,7 @@ app.registerExtension({
         }
 
         let reg = REGISTER_MAP[nodeData.name];
-        if(reg){
+        if(reg) {
             reg(nodeType, nodeData);
         }
 
