@@ -113,7 +113,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Displace ❌</span></li>
 <li><span style="color:IndianRed">Flip ❌</span></li>
 <li><span style="color:IndianRed">Map UV ❌</span></li>
-<li><span style="color:IndianRed">Lens Distortion ❌</span></li>
+<li><span style="color:GoldenRod">Lens Distortion 🔵 (Border of image is handled a bit differently than Blender; alpha is ignored, like in Blender)</span></li>
 <li><span style="color:IndianRed">Movie Distortion ❌</span></li>
 </ul>
 </details>
@@ -149,4 +149,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 22/56
+Implemented nodes: 23/56

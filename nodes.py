@@ -1138,3 +1138,48 @@ class BlenderMath:
         b_res = BlenderData(res)
 
         return (b_res, b_res.as_out(), )
+
+class BlenderLensDistortion:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Projector": ("BOOLEAN", {"default": False}),
+                "Jitter": ("BOOLEAN", {"default": False}),
+                "Fit": ("BOOLEAN", {"default": False}),
+                **COLOR_INPUT("Color", 1.0, True),
+                **FLOAT_INPUT("Distortion", 0.0, -0.9999, 1.0),
+                **FLOAT_INPUT("Dispersion", 0.0, 0.0, 10.0),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "lensdistort"
+    CATEGORY = "Blender/Transform"
+    
+    def lensdistort(self, **kwargs):
+        projector = kwargs["Projector"]
+        jitter = kwargs["Jitter"]
+        fit = kwargs["Fit"]
+
+        b_col = BlenderData(kwargs, "Color")
+        b_distortion = BlenderData(kwargs, "Distortion")
+        b_dispersion = BlenderData(kwargs, "Dispersion")
+        guess_canvas(b_col, b_distortion, b_dispersion)
+        
+        col = b_col.as_rgba()
+        distortion = b_distortion.as_float()
+        dispersion = b_dispersion.as_float()
+
+        res = lens_distortion(col, distortion, dispersion, projector, jitter, fit)
+        b_r = BlenderData(res)
+        
+        return (b_r, b_r.as_out(), )

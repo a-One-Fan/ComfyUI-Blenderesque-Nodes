@@ -7,7 +7,7 @@ DEFAULT_CANVAS = (64, 64)
 
 class BlenderData:
     image: torch.Tensor | None
-    canvas: tuple[int, int] | None
+    canvas: tuple[int, int] | None # Canvas is Width x Height
     value: tuple | float | int | None
     def __init__(self, any, paramname: str | torch.Tensor | None = None, 
                  colortransform_if_converting: bool = True, colortransform_force: bool | None = None,
@@ -114,10 +114,10 @@ class BlenderData:
 
             size_123 = (self.image.size()[0], canvas[0], canvas[1])
             locrot = torch.zeros((*size_123, 3))
-            scale_x = torch.full((*size_123, 1), canvas[0] / oldcanvas[0])
-            scale_y = torch.full((*size_123, 1), canvas[1] / oldcanvas[1])
+            scale_x = torch.full((*size_123, 1), canvas[1] / oldcanvas[1]) # Tensors are Height x Width
+            scale_y = torch.full((*size_123, 1), canvas[0] / oldcanvas[0]) # Width is 1, Height is 0 
             locrotscale = torch.cat((locrot, scale_x, scale_y, ), dim=-1)
-            cropped = transform(im_rgba, canvas, locrotscale, interp, 0)
+            cropped = transform(im_rgba, [canvas[1], canvas[0]], locrotscale, interp, 0)
             self.image = cropped
                     
         self.canvas = canvas

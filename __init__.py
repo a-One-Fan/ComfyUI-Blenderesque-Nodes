@@ -40,7 +40,7 @@ NODE_CLASS_MAPPINGS = {
     #"BlenderDisplace": BlenderDisplace,
     #"BlenderFlip": BlenderFlip,
     #"BlenderMapUV": BlenderMapUV,
-    #"BlenderLensDistortion": BlenderLensDistortion,
+    "BlenderLensDistortion": BlenderLensDistortion,
     #"BlenderMovieDistortion": BlenderMovieDistortion,
 }
 
@@ -81,6 +81,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     #"BlenderDisplace": "Displace",
     #"BlenderFlip": "Flip",
     #"BlenderMapUV": "Map UV",
-    #"BlenderLensDistortion": "Lens Distortion",
+    "BlenderLensDistortion": "Lens Distortion",
     #"BlenderMovieDistortion": "Movie Distortion",
 }
