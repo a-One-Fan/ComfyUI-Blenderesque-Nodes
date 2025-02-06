@@ -23,6 +23,16 @@ class OpenCLContext:
 
 global_ish_context = OpenCLContext()
 
+# ([1]x) [W] x [H] x [Channels] -> [Channels*Width*Height]
+def te_to_np_buf(te: torch.Tensor):
+    if len(te.size()) == 4:
+        te = te[0]
+    return te.permute((1, 0, 2)).contiguous().ravel().numpy()
+
+# [Channels*Width*Height] -> [W] x [H] x [Channels]
+def np_buf_to_te(buf, size):
+    res = torch.from_numpy(buf).to(dtype=torch.float32).reshape((size[1], size[0], 4))
+    return res.permute((1, 0, 2))
 
 def transform(
     te: torch.FloatTensor,
@@ -33,7 +43,7 @@ def transform(
 ):
     """
     Image is Batch x Width x Height x 4\n
-    LocRotScale is Batch x Width x Height x 5\n
+    LocRotScale is (Batch or 1) x Width x Height x 5\n
     Loc xy, Rot in rad, Scale xy\n
     ##### Interpolation: 
     - 0 = closest
@@ -57,9 +67,9 @@ def transform(
     assert lrs_size[2] == newsize[1], f"Locrotscale doesn't match output image Y ({lrs_size} != {newsize})"
 
     for b in range(te.size()[0]):
-        te_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te[b].numpy())
+        te_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(te[b]))
         lrs_maybe_batch = locrotscale[b] if locrotscale.size()[0] > 1 else locrotscale[0]
-        locrotscale_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=lrs_maybe_batch.numpy())
+        locrotscale_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(lrs_maybe_batch))
         
         pixels = newsize[0] * newsize[1]
         res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 4 * np.dtype(np.float32).itemsize)
@@ -71,6 +81,6 @@ def transform(
 
         cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
 
-        results.append(torch.from_numpy(res_np_floats).to(dtype=torch.float32).reshape((newsize[0], newsize[1], 4)))
+        results.append(np_buf_to_te(res_np_floats, newsize))
 
     return torch.stack(results, dim=0)

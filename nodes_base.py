@@ -114,8 +114,8 @@ class BlenderData:
 
             size_123 = (self.image.size()[0], canvas[0], canvas[1])
             locrot = torch.zeros((*size_123, 3))
-            scale_x = torch.full((*size_123, 1), canvas[1] / oldcanvas[1])
-            scale_y = torch.full((*size_123, 1), canvas[0] / oldcanvas[0]) # TODO: Why swapped???
+            scale_x = torch.full((*size_123, 1), canvas[0] / oldcanvas[0])
+            scale_y = torch.full((*size_123, 1), canvas[1] / oldcanvas[1])
             locrotscale = torch.cat((locrot, scale_x, scale_y, ), dim=-1)
             cropped = transform(im_rgba, canvas, locrotscale, interp, 0)
             self.image = cropped

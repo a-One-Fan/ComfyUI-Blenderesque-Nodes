@@ -12,8 +12,8 @@ float4 lerp4(float4 a, float4 b, float fac){
 }
 
 float4 simple_sample(__global const float* tex, float uvx, float uvy, int resx, int resy){
-    int pixx = uvx * resy;
-    int pixy = (int)(uvy * resx) * resy;
+    int pixx = uvx * resx;
+    int pixy = (int)(uvy * resy) * resx;
 
     int off = (pixx + pixy) * 4;
 
@@ -91,7 +91,7 @@ float4 sample(__global const float* tex, float uvx, float uvy, int resx, int res
 }
 
 __kernel void transform(__global const float *in_img, const int inx, const int iny, const int outx, const int outy,
-    __global const float *locrotscale, const int interp, const int extend, __global float *res_floats) {
+    __global const float *locrotscale, const int interp, const int extend, __global float *res_floats){
 
     int gid = get_global_id(0);
 
@@ -101,9 +101,9 @@ __kernel void transform(__global const float *in_img, const int inx, const int i
     float sx = locrotscale[gid*5+3];
     float sy = locrotscale[gid*5+4];
 
-    float ar = (float)(outx) / (float)(outy);
-    float outuvx = (float)(gid % outy) / (float)(outy);
-    float outuvy = (float)(gid / outy) / (float)(outx);
+    float ar = (float)(outy) / (float)(outx);
+    float outuvx = (float)(gid % outx) / (float)(outx);
+    float outuvy = (float)(gid / outx) / (float)(outy);
 
     float inuvx = outuvx;
     float inuvy = outuvy;
