@@ -1183,3 +1183,39 @@ class BlenderLensDistortion:
         b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
+
+class BlenderUV:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                #"Auto Dimensions": ("BOOLEAN", {"default": False}),
+                **FLOAT_INPUT("Width", 1024, 1, 2**14),
+                **FLOAT_INPUT("Height", 1024, 1, 2**14),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "uv"
+    CATEGORY = "Blender/Input"
+    
+    def uv(self, **kwargs):
+        b_x = BlenderData(kwargs, "Width")
+        b_y = BlenderData(kwargs, "Height")
+
+        x = round(b_x.as_primitive_float())
+        y = round(b_y.as_primitive_float())
+
+        uv = make_uv(x, y)
+
+        b_r = BlenderData(uv, colortransform_force=False)
+        
+        return (b_r, b_r.as_out(), )

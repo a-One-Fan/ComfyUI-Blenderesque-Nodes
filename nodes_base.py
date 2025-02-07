@@ -9,6 +9,7 @@ class BlenderData:
     image: torch.Tensor | None
     canvas: tuple[int, int] | None # Canvas is Width x Height
     value: tuple | float | int | None
+    is_color: bool
     def __init__(self, any, paramname: str | torch.Tensor | None = None, 
                  colortransform_if_converting: bool = True, colortransform_force: bool | None = None,
                  widget_override=None, default_notfound=None):
@@ -34,6 +35,8 @@ class BlenderData:
                     t = any[paramname]
                     if type(t) is torch.Tensor and t.size()[3] in [3, 4]:
                         colortransform = colortransform_if_converting
+
+        self.is_color = colortransform
 
         def color_transform(te):
             if not colortransform:
@@ -74,6 +77,7 @@ class BlenderData:
                 self.image = other.image
                 self.canvas = other.canvas
                 self.value = other.value
+                self.is_color = other.is_color
             elif widget_override is not None:
                 self.value = widget_override
             elif any.get(paramname + "A", None) != None:
@@ -211,6 +215,32 @@ class BlenderData:
 
     def is_value(self):
         return self.value != None
+    
+    def as_primitive_float(self) -> float:
+        if self.image:
+            if self.is_color and self.image.size()[3] == 4:
+                im_to_mean, _ = self.image.split((3, 1), dim=-1)
+            else:
+                im_to_mean = self.image
+            
+            if self.is_color:
+                return rgb_to_srgb(im_to_mean.mean()).item()
+            return im_to_mean.mean().item()
+        if type(self.value) in [int, float]:
+            return self.value
+        
+        sum = 0
+        if self.is_color and len(self.value) == 4:
+            items_to_sum = self.value[:-1]
+        else:
+            items_to_sum = self.value
+
+        for e in items_to_sum:
+            sum += e
+        sum /= len(items_to_sum)
+        if self.is_color:
+            return rgb_to_srgb(torch.Tensor((sum,))).item()
+        return sum
 
 def split_rgba(tensor, rgb_chunk=True):
     """rgb_chunk: return rgb, a instead of r, g, b, a"""
@@ -250,6 +280,21 @@ def guess_canvas(*blens: BlenderData, default=DEFAULT_CANVAS):
         b.set_canvas(res)
 
     return res
+
+# Returns [1] x [Height] x [Width] x [3] UV-map in this format:
+# (0.0, 1.0) --- (1.0, 1.0)
+#     |              |
+# (0.0, 0.0) --- (1.0, 0.0)
+def make_uv(width, height, device="cpu"):
+    u_1d1c = torch.linspace(0.0, 1.0, width)
+    u_1d3c = torch.stack((u_1d1c, torch.zeros_like(u_1d1c), torch.zeros_like(u_1d1c)), dim=-1)
+    u_2d = u_1d3c.repeat((height, 1, 1)).to(device)
+
+    v_1d1c = torch.linspace(1.0, 0.0, height)
+    v_1d3c = torch.stack((torch.zeros_like(v_1d1c), v_1d1c, torch.zeros_like(v_1d1c)), dim=-1)
+    v_2d = v_1d3c.repeat((width, 1, 1)).permute(1, 0, 2).to(device)
+
+    return (u_2d+v_2d).unsqueeze(0)
 
 COLMAX = 1.0 
 # Blender has soft min and max. 

@@ -42,6 +42,8 @@ NODE_CLASS_MAPPINGS = {
     #"BlenderMapUV": BlenderMapUV,
     "BlenderLensDistortion": BlenderLensDistortion,
     #"BlenderMovieDistortion": BlenderMovieDistortion,
+
+    "BlenderUV": BlenderUV,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -83,4 +85,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     #"BlenderMapUV": "Map UV",
     "BlenderLensDistortion": "Lens Distortion",
     #"BlenderMovieDistortion": "Movie Distortion",
+
+    "BlenderUV": "UV",
 }

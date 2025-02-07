@@ -42,8 +42,8 @@ Hopefully in the future I'll look into integrating this with https://github.com/
 </details>
 
 <details>
-<summary>New Comfy-Specific Nodes 0/2 and new functionality to old nodes</summary>
-<li><span style="color:IndianRed">Input/UV ❌</span></li>
+<summary>New Comfy-Specific Nodes 1/2 and new functionality to old nodes</summary>
+<li><span style="color:LightGreen">Input/UV ✅</span></li>
 Creates a basic UV gradient for mapping other textures with.
 <li><span style="color:IndianRed">Converter/Extract Data ❌</span></li>
 Convert Blender Data to float, image, or get its canvas size.
@@ -156,4 +156,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 24/59
+Implemented nodes: 25/59
