@@ -678,7 +678,7 @@ class BlenderRotate:
     CATEGORY = "Blender/Transform"
     
     def rotate(self, **kwargs):
-        filter, ext = get_filter_extension()
+        filter, ext = get_filter_extension(kwargs)
 
         b_loc = BlenderData((0.0, 0.0))
         if not kwargs.get("Rotation"):
@@ -709,7 +709,7 @@ class BlenderScale:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                **FILTER_AND_EXTENSION()
+                **FILTER_AND_EXTENSION(),
                 **COLOR_INPUT("Color", 1.0, True),
                 **FLOAT_INPUT("X", 1.0, -inf, inf),
                 **FLOAT_INPUT("Y", 1.0, -inf, inf),
@@ -775,7 +775,7 @@ class BlenderTranslate:
     CATEGORY = "Blender/Transform"
     
     def translate(self, **kwargs):
-        filter, ext = get_filter_extension()
+        filter, ext = get_filter_extension(kwargs)
 
         b_loc_x = BlenderData(kwargs, "X")
         b_loc_y = BlenderData(kwargs, "Y")
@@ -825,7 +825,7 @@ class BlenderTransform:
     CATEGORY = "Blender/Transform"
     
     def transform(self, **kwargs):
-        filter, ext = get_filter_extension()
+        filter, ext = get_filter_extension(kwargs)
 
         b_loc_x = BlenderData(kwargs, "X")
         b_loc_y = BlenderData(kwargs, "Y")
@@ -1211,3 +1211,54 @@ class BlenderUV:
         b_r = BlenderData(uv, colortransform_force=False)
         
         return (b_r, b_r.as_out(), )
+
+class BlenderCrop:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Rescale": ("BOOLEAN", {"default": False}),
+                "Relative": ("BOOLEAN", {"default": False}),
+                #"Vector": ("BOOLEAN", {"default": False}),
+                "Left": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
+                "Right": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
+                "Up": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
+                "Down": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
+                **COLOR_INPUT("Color", 1.0, True),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "crop"
+    CATEGORY = "Blender/Transform"
+    
+    def crop(self, **kwargs):
+        rescale = kwargs["Rescale"]
+        relative = kwargs["Relative"]
+        xp, xn, yp, yn = kwargs["Left"], kwargs["Right"], kwargs["Up"], kwargs["Down"]
+
+        b_col = BlenderData(kwargs, "Color")
+        guess_canvas(b_col)
+
+        if not relative:
+            newcanvas = [b_col.canvas[0] + yp + yn, b_col.canvas[1] + xp + xn]
+            pixsize = [newcanvas[0] / b_col.canvas[0], newcanvas[1] / b_col.canvas[1]]
+            off = [pixsize[1] * (xp - xn), pixsize[0] * (yp - yn)]
+        else:
+            newcanvas = [b_col.canvas[0]*(1+yp+yn), b_col.canvas[1]*(1+xp+xn)]
+            off = [xp-xn, yp-yn]
+
+        if not rescale:
+            b_col.set_canvas(newcanvas, False, off)
+        else:
+            b_col.set_canvas(newcanvas, True)
+        
+        return (b_col, b_col.as_out(), )

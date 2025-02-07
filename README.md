@@ -109,14 +109,14 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Transform 5/11</summary>
+<summary>Transform 6/11</summary>
 <ul>
 <li><span style="color:GoldenRod">Rotate 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:GoldenRod">Scale 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:GoldenRod">Transform 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:GoldenRod">Translate 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:IndianRed">Corner Pin ❌</span></li>
-<li><span style="color:IndianRed">Crop ❌</span></li>
+<li><span style="color:LightGreen">Crop ✅</span></li>
 <li><span style="color:IndianRed">Displace ❌</span></li>
 <li><span style="color:IndianRed">Flip ❌</span></li>
 <li><span style="color:IndianRed">Map UV ❌</span></li>
@@ -156,4 +156,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 25/59
+Implemented nodes: 26/59

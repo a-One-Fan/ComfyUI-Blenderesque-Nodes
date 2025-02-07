@@ -38,28 +38,13 @@ def np_buf_to_te(buf, size):
     res = torch.from_numpy(buf).to(dtype=torch.float32).reshape((size[0], size[1], 4))
     return res
 
-def transform(
+def transform_4chan(
     te: torch.FloatTensor,
     newsize: tuple[int, int],
     locrotscale: torch.FloatTensor,
     interpolation: int,
     extension: int
 ):
-    """
-    Image is Batch x Height x Width x 4\n
-    Newsize is Height x Width\n
-    LocRotScale is (Batch or 1) x Height x Width x 5\n
-    Loc xy, Rot in rad, Scale xy\n
-    ##### Interpolation: 
-    - 0 = closest
-    - 1 = linear
-    - 2 = cubic
-    ##### Extension:
-    - 0 = clip
-    - 1 = repeat
-    - 2 = extend
-    - 3 = mirror\n
-    """
     ctx = global_ish_context
     mf = cl.mem_flags
 
@@ -89,6 +74,39 @@ def transform(
         results.append(np_buf_to_te(res_np_floats, newsize))
 
     return torch.stack(results, dim=0)
+
+def transform(
+    te: torch.FloatTensor,
+    newsize: tuple[int, int],
+    locrotscale: torch.FloatTensor,
+    interpolation: int,
+    extension: int
+):
+    """
+    Image is Batch x Height x Width x 4\n
+    Newsize is Height x Width\n
+    LocRotScale is (Batch or 1) x Height x Width x 5\n
+    Loc xy, Rot in rad, Scale xy\n
+    ##### Interpolation: 
+    - 0 = closest
+    - 1 = linear
+    - 2 = cubic
+    ##### Extension:
+    - 0 = clip
+    - 1 = repeat
+    - 2 = extend
+    - 3 = mirror\n
+    """
+
+    splits = list(te.split(4, dim=3))
+    lastpad = 0
+    if splits[-1].size()[3] < 4:
+        lastpad = 4 - splits[-1].size()[-1]
+        splits[-1] = torch.cat((splits[-1], torch.zeros((*splits[-1].size()[:-1], lastpad))), dim=3)
+    cropped_splits = [transform_4chan(s, newsize, locrotscale, interpolation, extension) for s in splits]
+    if lastpad:
+        cropped_splits[-1], _ = cropped_splits[-1].split((4-lastpad, lastpad), dim=3)
+    return torch.cat(cropped_splits, dim=3)
 
 def lens_distortion(
         te: torch.FloatTensor,

@@ -108,22 +108,34 @@ class BlenderData:
         else:
             raise Exception(f"Can not convert {type(any)} to Blender data: {any}")
 
-    def set_canvas(self, canvas: tuple[int, int]):
+    def __str__(self):
+        if self.image is None:
+            return f"Primitive {self.value}, canvas {self.canvas}"
+        return f"Tensor {self.image}, canvas {self.canvas}"
+
+    def set_canvas(self, canvas: tuple[int, int], scale=True, off=(0, 0)):
         if self.image != None and self.image.size()[1:-1] != canvas:
             interp = 1 #'bilinear'
             oldcanvas = (self.image.size()[1], self.image.size()[2])
             if oldcanvas[0] < canvas[0] and oldcanvas[1] < canvas[1]:
                 interp = 2 #'bicubic'
 
-            im_rgba = self.as_rgba()
+            if scale:
+                sx = canvas[1] / oldcanvas[1] # Tensors are Height x Width
+                sy = canvas[0] / oldcanvas[0] # Width is 1, Height is 0 
+            else:
+                sx = 1
+                sy = 1
 
             size_123 = (self.image.size()[0], canvas[0], canvas[1])
-            locrot = torch.zeros((*size_123, 3))
-            scale_x = torch.full((*size_123, 1), canvas[1] / oldcanvas[1]) # Tensors are Height x Width
-            scale_y = torch.full((*size_123, 1), canvas[0] / oldcanvas[0]) # Width is 1, Height is 0 
-            locrotscale = torch.cat((locrot, scale_x, scale_y, ), dim=-1)
-            cropped = transform(im_rgba, [canvas[1], canvas[0]], locrotscale, interp, 0)
-            self.image = cropped
+            locx = torch.full((*size_123, 1), off[0])
+            locy = torch.full((*size_123, 1), off[1])
+            rot = torch.zeros((*size_123, 1))
+            scale_x = torch.full((*size_123, 1), sx)
+            scale_y = torch.full((*size_123, 1), sy)
+            locrotscale = torch.cat((locx, locy, rot, scale_x, scale_y, ), dim=-1)
+
+            self.image = transform(self.image, [canvas[1], canvas[0]], locrotscale, interp, 0)
                     
         self.canvas = canvas
 
@@ -216,8 +228,20 @@ class BlenderData:
 
     def as_vector(self, batch=1, channels=None) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 3?] tensor"""
+        if self.image is None:
+            if channels is None:
+                size = (batch, self.canvas[0], self.canvas[1], 1)
+                if type(self.value) in [int, float]:
+                    return torch.full(size, self.value)
+                return torch.cat([torch.full(size, val) for val in self.value], dim=-1)
+            else:
+                raise Exception("unimplemented")
+                if type(self.value) in [int, float]:
+                    to_resize = torch.full()
+                return resize_channels()
+
         if channels is None:
-            channels = 3
+            return self.image
         return resize_channels(self.image, channels)
 
     def is_value(self):
@@ -342,12 +366,12 @@ def resize_channels(te: torch.Tensor, desired_count: int, mode_shrink: int=0, mo
 def ensure_samesize_channels(*blens: BlenderData, force=None):
     first_te = None
     for b in blens:
-        if b.image:
+        if not b.image is None:
             first_te = b.image
             break
 
     if force is None:
-        if first_te:
+        if not first_te is None:
             desired_channels = first_te.size()[3]
         else:
             if type(blens[0].value) in [int, float]:
@@ -358,7 +382,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
         desired_channels = force
     
     for b in blens:
-        if b.image:
+        if not b.image is None:
             b.image = resize_channels(b.image, desired_channels)
         else:
             if type(b.value) in [int, float]:
