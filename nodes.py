@@ -5,7 +5,7 @@ from .nodes_base import *
 from .util import *
 from .cl_wrapper import *
 
-# Image: batch, x, y, channels
+# Image: batch, y, x, channels
 
 inf = 1000000
 
@@ -227,7 +227,6 @@ class BlenderSeparateColor:
         
         return (b_r, b_r.as_out(), b_g, b_g.as_out(), b_b, b_b.as_out(), b_a, b_a.as_out())
     
-
 class BlenderMapRange:
     def __init__(self):
         pass
@@ -266,6 +265,8 @@ class BlenderMapRange:
         b_frommax = BlenderData(kwargs, "From Max", widget_override=kwargs.get("From MaxX") if dtype == "Float" else None)
         b_tomin = BlenderData(kwargs, "To Min", widget_override=kwargs.get("To MinX") if dtype == "Float" else None)
         b_tomax = BlenderData(kwargs, "To Max", widget_override=kwargs.get("To MaxX") if dtype == "Float" else None)
+        if dtype == "Vector":
+            ensure_samesize_channels(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
         guess_canvas(b_val, b_frommin, b_frommax, b_tomin, b_tomax)
 
         if dtype == "Float":
@@ -275,11 +276,11 @@ class BlenderMapRange:
             tomin = b_tomin.as_float()
             tomax = b_tomax.as_float()
         elif dtype == "Vector":
-            val = b_val.as_rgb()
-            frommin = b_frommin.as_rgb()
-            frommax = b_frommax.as_rgb()
-            tomin = b_tomin.as_rgb()
-            tomax = b_tomax.as_rgb()
+            val = b_val.as_vector()
+            frommin = b_frommin.as_vector()
+            frommax = b_frommax.as_vector()
+            tomin = b_tomin.as_vector()
+            tomax = b_tomax.as_vector()
 
         if(mode == "Stepped Linear"):
             b_steps = BlenderData(kwargs, "Steps")
@@ -423,7 +424,7 @@ class BlenderSeparateXYZ:
         b_vec = BlenderData(kwargs, "Vector")
         guess_canvas(b_vec)
         
-        xyz = b_vec.as_rgb()
+        xyz = b_vec.as_vector(channels=3)
         x, y, z = xyz.split(1, dim=-1)
         b_x, b_y, b_z = BlenderData(x), BlenderData(y), BlenderData(z)
         return (b_x, b_x.as_out(), b_y, b_y.as_out(), b_z, b_z.as_out())
@@ -613,7 +614,7 @@ class BlenderCombineColor:
         b_res = BlenderData(rgb, a)
         
         return (b_res, b_res.as_out(), )
-    
+
 class BlenderSetAlpha:
     def __init__(self):
         pass
@@ -652,9 +653,6 @@ class BlenderSetAlpha:
         
         b_res = BlenderData(col, new_alpha)
         return (b_res, b_res.as_out())
-    
-FILTERS = ["Nearest", "Bilinear", "Bicubic"]
-EXTENSIONS = ["Clip", "Repeat", "Extend", "Mirror"]
 
 class BlenderRotate:
     def __init__(self):
@@ -664,8 +662,7 @@ class BlenderRotate:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Filter": (FILTERS, ),
-                "Extension": (EXTENSIONS, ),
+                **FILTER_AND_EXTENSION(),
                 **FLOAT_INPUT("Rotation", 0.0, -360.0, 360.0, 2.0),
                 **COLOR_INPUT("Color", 1.0, True),
             }
@@ -681,8 +678,7 @@ class BlenderRotate:
     CATEGORY = "Blender/Transform"
     
     def rotate(self, **kwargs):
-        filter = kwargs["Filter"]
-        ext = kwargs["Extension"]
+        filter, ext = get_filter_extension()
 
         b_loc = BlenderData((0.0, 0.0))
         if not kwargs.get("Rotation"):
@@ -700,11 +696,11 @@ class BlenderRotate:
 
         locrotscale = torch.cat((loc, rot, scale), dim=-1)
 
-        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
-    
+
 class BlenderScale:
     def __init__(self):
         pass
@@ -713,8 +709,7 @@ class BlenderScale:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Filter": (FILTERS, ),
-                "Extension": (EXTENSIONS, ),
+                **FILTER_AND_EXTENSION()
                 **COLOR_INPUT("Color", 1.0, True),
                 **FLOAT_INPUT("X", 1.0, -inf, inf),
                 **FLOAT_INPUT("Y", 1.0, -inf, inf),
@@ -731,8 +726,7 @@ class BlenderScale:
     CATEGORY = "Blender/Transform"
     
     def scale(self, **kwargs):
-        filter = kwargs["Filter"]
-        ext = kwargs["Extension"]
+        filter, ext = get_filter_extension(kwargs)
 
         b_loc = BlenderData((0.0, 0.0))
         b_rot = BlenderData(0.0)
@@ -750,11 +744,11 @@ class BlenderScale:
 
         locrotscale = torch.cat((loc, rot, scale_x, scale_y), dim=-1)
 
-        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
-    
+
 class BlenderTranslate:
     def __init__(self):
         pass
@@ -763,8 +757,7 @@ class BlenderTranslate:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Filter": (FILTERS, ),
-                "Extension": (EXTENSIONS, ),
+                **FILTER_AND_EXTENSION(),
                 "Relative": ("BOOLEAN", {"default": False}),
                 **COLOR_INPUT("Color", 1.0, True),
                 **FLOAT_INPUT("X", 1.0, -inf, inf),
@@ -782,8 +775,7 @@ class BlenderTranslate:
     CATEGORY = "Blender/Transform"
     
     def translate(self, **kwargs):
-        filter = kwargs["Filter"]
-        ext = kwargs["Extension"]
+        filter, ext = get_filter_extension()
 
         b_loc_x = BlenderData(kwargs, "X")
         b_loc_y = BlenderData(kwargs, "Y")
@@ -801,7 +793,7 @@ class BlenderTranslate:
 
         locrotscale = torch.cat((loc_x, loc_y, rot, scale), dim=-1)
 
-        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
@@ -814,8 +806,7 @@ class BlenderTransform:
     def INPUT_TYPES(s):
         return {
             "optional": {
-                "Filter": (FILTERS, ),
-                "Extension": (EXTENSIONS, ),
+                **FILTER_AND_EXTENSION(),
                 **COLOR_INPUT("Color", 1.0, True),
                 **FLOAT_INPUT("X", 0.0, -inf, inf),
                 **FLOAT_INPUT("Y", 0.0, -inf, inf),
@@ -834,8 +825,7 @@ class BlenderTransform:
     CATEGORY = "Blender/Transform"
     
     def transform(self, **kwargs):
-        filter = kwargs["Filter"]
-        ext = kwargs["Extension"]
+        filter, ext = get_filter_extension()
 
         b_loc_x = BlenderData(kwargs, "X")
         b_loc_y = BlenderData(kwargs, "Y")
@@ -855,7 +845,7 @@ class BlenderTransform:
 
         locrotscale = torch.cat((loc_x, loc_y, rot, scale), dim=-1)
 
-        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, FILTERS.index(filter), EXTENSIONS.index(ext))
+        res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
         return (b_r, b_r.as_out(), )
@@ -898,6 +888,8 @@ class BlenderMix:
         b_fac = BlenderData(kwargs, "Factor")
         b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color", widget_override=kwargs.get("AR") if dtype=="Float" else None)
         b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color", widget_override=kwargs.get("BR") if dtype=="Float" else None)
+        if dtype == "Vector":
+            ensure_samesize_channels(b_a, b_b)
         guess_canvas(b_fac, b_a, b_b)
 
 
@@ -913,8 +905,8 @@ class BlenderMix:
             b_res = BlenderData(res)
         
         elif dtype == "Vector":
-            a_v = b_a.as_rgb()
-            b_v = b_b.as_rgb()
+            a_v = b_a.as_vector()
+            b_v = b_b.as_vector()
 
             res = a_v * (1.0-fac) + b_v * fac
             b_res = BlenderData(res, colortransform_force=False)
@@ -993,7 +985,7 @@ class BlenderMix:
             b_res = BlenderData(mixed, a_alpha)
 
         return (b_res, b_res.as_out(), )
-    
+
 class BlenderMath:
     def __init__(self):
         pass

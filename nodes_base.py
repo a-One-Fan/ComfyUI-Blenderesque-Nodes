@@ -2,12 +2,13 @@ import torch
 import torch.nn.functional as functional
 from .util import *
 from .cl_wrapper import transform
+from math import floor, ceil
 
 DEFAULT_CANVAS = (64, 64)
 
 class BlenderData:
     image: torch.Tensor | None
-    canvas: tuple[int, int] | None # Canvas is Width x Height
+    canvas: tuple[int, int] | None # Canvas is Height x Width
     value: tuple | float | int | None
     is_color: bool
     def __init__(self, any, paramname: str | torch.Tensor | None = None, 
@@ -196,7 +197,7 @@ class BlenderData:
     def as_float(self, batch=1, use_alpha=False) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 1] tensor"""
         if self.image == None:
-            if type(self.value) == tuple: 
+            if type(self.value) in [tuple, list]:
                 avg = sum(self.value) / len(self.value)
                 return torch.full((batch, self.canvas[0], self.canvas[1], 1), avg)
             else:
@@ -212,6 +213,12 @@ class BlenderData:
         
         raise Exception(f"Failed to interpret tensor of size {self.image.size()} as float!")
         return None
+
+    def as_vector(self, batch=1, channels=None) -> torch.Tensor:
+        """Interpret as a [batch, canvas x, canvas y, 3?] tensor"""
+        if channels is None:
+            channels = 3
+        return resize_channels(self.image, channels)
 
     def is_value(self):
         return self.value != None
@@ -281,6 +288,90 @@ def guess_canvas(*blens: BlenderData, default=DEFAULT_CANVAS):
 
     return res
 
+
+def extend_channels(te: torch.Tensor, desired_count: int, mode: int=0):
+    """
+    0: Pad with 0\n
+    1: Repeat, cutting off what doesn't fit\n
+    2: Repeat last channel
+    """
+    assert te.size()[3] < desired_count, f"{te.size()} has too many channels to extend to {desired_count}"
+    if mode == 0:
+        return torch.cat((te, torch.zeros(list(te.size())[:3] + [desired_count - te.size()[3]])), dim=3)
+    elif mode == 1:
+        chopcount = te.size()[3] - desired_count % te.size()[3]
+        if chopcount == te.size()[3]:
+            chopcount = 0
+        repeatcount = ceil(desired_count / te.size()[3])
+        repeated = te.repeat((1, 1, 1, repeatcount))
+        if chopcount > 0:
+            chopped = repeated.split((desired_count, chopcount), dim=3)
+        else:
+            chopped = repeated
+        return chopped
+    elif mode == 2:
+        first, last = te.split((te.size()[3]-1, 1), dim=3)
+        return torch.cat((first, last.repeat((1, 1, 1, desired_count - te.size()[3]))), dim=3)
+    
+    raise Exception(f"Unrecognized channel extension mode {mode}")
+
+def shrink_channels(te: torch.Tensor, desired_count: int, mode: int=0):
+    """
+    0: Chop off\n
+    1: Pair downscale
+    """
+    assert te.size()[3] > desired_count, f"{te.size()} has too few channels to shrink to {desired_count}"
+    if mode == 0:
+        first, _ = te.split((desired_count, te.size()[3] - desired_count), dim=3)
+        return first
+    elif mode == 1:
+        splits = te.split(ceil(te.size()[3] / desired_count), dim=3)
+        avg = [s.mean(dim=3).unsqueeze(3) for s in splits]
+        return torch.cat(avg, dim=3)
+    
+    raise Exception(f"Unrecognized channel extension mode {mode}")
+
+def resize_channels(te: torch.Tensor, desired_count: int, mode_shrink: int=0, mode_extend: int=0):
+    if te.size()[3] == desired_count:
+        return te
+    if te.size()[3] > desired_count:
+        return shrink_channels(te, desired_count, mode_shrink)
+    if te.size()[3] < desired_count:
+        return extend_channels(te, desired_count, mode_extend)
+    
+def ensure_samesize_channels(*blens: BlenderData, force=None):
+    first_te = None
+    for b in blens:
+        if b.image:
+            first_te = b.image
+            break
+
+    if force is None:
+        if first_te:
+            desired_channels = first_te.size()[3]
+        else:
+            if type(blens[0].value) in [int, float]:
+                desired_channels = 1
+            else:
+                desired_channels = len(blens[0].value)
+    else:
+        desired_channels = force
+    
+    for b in blens:
+        if b.image:
+            b.image = resize_channels(b.image, desired_channels)
+        else:
+            if type(b.value) in [int, float]:
+                as_te = torch.Tensor((b.value, ))
+            else:
+                as_te = torch.Tensor(b.value)
+            as_te = as_te.unsqueeze(0).unsqueeze(0).unsqueeze(0)
+            as_te = resize_channels(as_te, desired_channels)
+            b.value = as_te[0][0][0].tolist()
+    return blens
+
+    
+
 # Returns [1] x [Height] x [Width] x [3] UV-map in this format:
 # (0.0, 1.0) --- (1.0, 1.0)
 #     |              |
@@ -336,3 +427,15 @@ def BLENDER_OUTPUT(single=False):
 def BLEND_VALID_INPUTS(input_types, ref):
     #input_types is a dict of {"Name": "TYPE_NAME"}
     return True
+
+FILTERS = ["Nearest", "Bilinear", "Bicubic"]
+EXTENSIONS = ["Clip", "Repeat", "Extend", "Mirror"]
+
+def FILTER_AND_EXTENSION():
+    return {"Filter": (FILTERS, ), 
+            "Extension": (EXTENSIONS, ), }
+
+def get_filter_extension(kwargs):
+    f = FILTERS.index(kwargs["Filter"])
+    e = EXTENSIONS.index(kwargs["Extension"])
+    return f, e
