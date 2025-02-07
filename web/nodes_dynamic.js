@@ -359,8 +359,6 @@ function relabel_widgets(node) {
 
 const EXTENSION_NAME = "blenderesque_dynamic";
 
-const MAPRANGE = "BlenderMapRange";
-
 const NODES_INPUT = ["BlenderValue", "BlenderRGB", "BlenderUV"];
 const NODES_COLOR = ["BlenderBrightnessContrast", "BlenderGamma", "BlenderHueSaturationValue", "BlenderInvertColor", 
     "BlenderExposure", "BlenderTonemap", "BlenderAlphaOver", "BlenderZCombine", "BlenderAlphaConvert", "BlenderConvertColorspace",

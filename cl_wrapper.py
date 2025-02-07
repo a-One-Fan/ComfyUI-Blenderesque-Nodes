@@ -38,7 +38,7 @@ def np_buf_to_te(buf, size):
     res = torch.from_numpy(buf).to(dtype=torch.float32).reshape((size[0], size[1], 4))
     return res
 
-def transform_4chan(
+def __transform_4chan(
     te: torch.FloatTensor,
     newsize: tuple[int, int],
     locrotscale: torch.FloatTensor,
@@ -49,12 +49,6 @@ def transform_4chan(
     mf = cl.mem_flags
 
     results = []
-
-    lrs_size = locrotscale.size()
-    assert lrs_size[3] == 5, f"Locrotscale is not 5-channel ({lrs_size})"
-    assert lrs_size[0] == 1 or lrs_size[0] == te.size()[0], f"Locrotscale has wrong batch size ({lrs_size} != {te.size()})"
-    assert lrs_size[2] == newsize[1], f"Locrotscale doesn't match output image X ({lrs_size} != {newsize})"
-    assert lrs_size[1] == newsize[0], f"Locrotscale doesn't match output image Y ({lrs_size} != {newsize})"
 
     for b in range(te.size()[0]):
         te_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(te[b]))
@@ -98,12 +92,18 @@ def transform(
     - 3 = mirror\n
     """
 
+    lrs_size = locrotscale.size()
+    assert lrs_size[3] == 5, f"Locrotscale is not 5-channel ({lrs_size})"
+    assert lrs_size[0] == 1 or lrs_size[0] == te.size()[0], f"Locrotscale has wrong batch size ({lrs_size} != {te.size()})"
+    assert lrs_size[2] == newsize[1], f"Locrotscale doesn't match output image X ({lrs_size} != {newsize})"
+    assert lrs_size[1] == newsize[0], f"Locrotscale doesn't match output image Y ({lrs_size} != {newsize})"
+
     splits = list(te.split(4, dim=3))
     lastpad = 0
     if splits[-1].size()[3] < 4:
         lastpad = 4 - splits[-1].size()[-1]
         splits[-1] = torch.cat((splits[-1], torch.zeros((*splits[-1].size()[:-1], lastpad))), dim=3)
-    cropped_splits = [transform_4chan(s, newsize, locrotscale, interpolation, extension) for s in splits]
+    cropped_splits = [__transform_4chan(s, newsize, locrotscale, interpolation, extension) for s in splits]
     if lastpad:
         cropped_splits[-1], _ = cropped_splits[-1].split((4-lastpad, lastpad), dim=3)
     return torch.cat(cropped_splits, dim=3)

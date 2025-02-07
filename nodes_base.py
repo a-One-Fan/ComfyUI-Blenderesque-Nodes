@@ -6,10 +6,17 @@ from math import floor, ceil
 
 DEFAULT_CANVAS = (64, 64)
 
+def maybe_convert_to_list(thing):
+    if type(thing) in [int, float]:
+        return [thing, ]
+    if type(thing) == tuple:
+        return list(thing)
+    return thing
+
 class BlenderData:
     image: torch.Tensor | None
     canvas: tuple[int, int] | None # Canvas is Height x Width
-    value: tuple | float | int | None
+    value: list | None
     is_color: bool
     def __init__(self, any, paramname: str | torch.Tensor | None = None, 
                  colortransform_if_converting: bool = True, colortransform_force: bool | None = None,
@@ -24,6 +31,10 @@ class BlenderData:
         widget_override: Instead of looking for a widget value, use this value directly\n
         default_notfound: Value to use when no widgets or inputs are found
         """
+
+        default_notfound = maybe_convert_to_list(default_notfound)
+        widget_override = maybe_convert_to_list(widget_override)
+        any = maybe_convert_to_list(any)
 
         if colortransform_force != None:
             colortransform = colortransform_force
@@ -79,16 +90,16 @@ class BlenderData:
                 self.canvas = other.canvas
                 self.value = other.value
                 self.is_color = other.is_color
-            elif widget_override is not None:
+            elif not widget_override is None:
                 self.value = widget_override
             elif any.get(paramname + "A", None) != None:
-                self.value = (any[paramname + "R"], any[paramname + "G"], any[paramname + "B"], any[paramname + "A"])
+                self.value = [any[paramname + "R"], any[paramname + "G"], any[paramname + "B"], any[paramname + "A"]]
             elif any.get(paramname + "R", None) != None:
-                self.value = (any[paramname + "R"], any[paramname + "G"], any[paramname + "B"])
+                self.value = [any[paramname + "R"], any[paramname + "G"], any[paramname + "B"]]
             elif any.get(paramname + "F", None) != None:
-                self.value = any[paramname + "F"]
+                self.value = [any[paramname + "F"], ]
             elif any.get(paramname + "X", None) != None:
-                self.value = (any[paramname + "X"], any[paramname + "Y"], any[paramname + "Z"])
+                self.value = [any[paramname + "X"], any[paramname + "Y"], any[paramname + "Z"]]
             else:
                 if default_notfound != None:
                     self.value = default_notfound
@@ -98,11 +109,7 @@ class BlenderData:
         elif paramname != None:
             raise Exception(f"Paramname of incorrect type: {type(paramname)} {paramname}")
             
-        elif type(any) in [tuple, list, float, int]:
-            if type(any) in [tuple, list]:
-                if not len(any) in [2, 3, 4]:
-                    raise Exception(F"Can not convert {len(any)}-elemnt tuple/list to Blender data!")
-                
+        elif type(any) == list:
             self.value = any
         
         else:
@@ -135,7 +142,7 @@ class BlenderData:
             scale_y = torch.full((*size_123, 1), sy)
             locrotscale = torch.cat((locx, locy, rot, scale_x, scale_y, ), dim=-1)
 
-            self.image = transform(self.image, [canvas[1], canvas[0]], locrotscale, interp, 0)
+            self.image = transform(self.image, canvas, locrotscale, interp, 0)
                     
         self.canvas = canvas
 
@@ -147,9 +154,9 @@ class BlenderData:
         size = (batch, self.canvas[0], self.canvas[1])
 
         if not self.image:
-            if type(self.value) in [list, tuple]:
+            if len(self.value) > 1:
                 return torch.stack((torch.full(size, self.value[0]), torch.full(size, self.value[1])), dim=-1)
-            return torch.full((*size, 2), self.value)
+            return torch.full((*size, 2), self.value[0])
         
         if self.image.size()[3] == 2:
             return self.image
@@ -165,13 +172,14 @@ class BlenderData:
         size = (batch, self.canvas[0], self.canvas[1])
 
         if self.image == None:
-            if type(self.value) == tuple: 
-                padded = list(self.value)
+            if self.is_color:
+                padded = self.value
                 if len(padded) < 4:
-                    padded += [1.0]
-                return torch.stack([torch.full(size, val) for val in padded], dim=-1)
+                    padded = padded + [1.0]
             else:
-                return torch.cat((torch.full((*size, 3), self.value), torch.ones((*size, 1))), dim=-1)
+                padded = resize_channels(self.value)
+            
+            return torch.stack([torch.full(size, val) for val in padded], dim=-1)
         
         if self.image.size()[3] == 1:
             return torch.cat((self.image, self.image, self.image, torch.ones(*size, 1)), dim=-1)
@@ -209,11 +217,8 @@ class BlenderData:
     def as_float(self, batch=1, use_alpha=False) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 1] tensor"""
         if self.image == None:
-            if type(self.value) in [tuple, list]:
-                avg = sum(self.value) / len(self.value)
-                return torch.full((batch, self.canvas[0], self.canvas[1], 1), avg)
-            else:
-                return torch.full((batch, self.canvas[0], self.canvas[1], 1), self.value)
+            avg = sum(self.value) / len(self.value)
+            return torch.full((batch, self.canvas[0], self.canvas[1], 1), avg)
         
         if self.image.size()[3] == 1:
             return self.image
@@ -229,23 +234,19 @@ class BlenderData:
     def as_vector(self, batch=1, channels=None) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 3?] tensor"""
         if self.image is None:
+            size = (batch, self.canvas[0], self.canvas[1], 1)
             if channels is None:
-                size = (batch, self.canvas[0], self.canvas[1], 1)
-                if type(self.value) in [int, float]:
-                    return torch.full(size, self.value)
-                return torch.cat([torch.full(size, val) for val in self.value], dim=-1)
+                val_channels = self.value
             else:
-                raise Exception("unimplemented")
-                if type(self.value) in [int, float]:
-                    to_resize = torch.full()
-                return resize_channels()
+                val_channels = resize_channels(self.value, channels)
+            return torch.cat([torch.full(size, val) for val in self.value], dim=-1)
 
         if channels is None:
             return self.image
         return resize_channels(self.image, channels)
 
     def is_value(self):
-        return self.value != None
+        return not self.value is None
     
     def as_primitive_float(self) -> float:
         if self.image:
@@ -257,8 +258,6 @@ class BlenderData:
             if self.is_color:
                 return rgb_to_srgb(im_to_mean.mean()).item()
             return im_to_mean.mean().item()
-        if type(self.value) in [int, float]:
-            return self.value
         
         sum = 0
         if self.is_color and len(self.value) == 4:
@@ -312,21 +311,20 @@ def guess_canvas(*blens: BlenderData, default=DEFAULT_CANVAS):
 
     return res
 
-
 def extend_channels(te: torch.Tensor, desired_count: int, mode: int=0):
     """
     0: Pad with 0\n
     1: Repeat, cutting off what doesn't fit\n
     2: Repeat last channel
     """
-    assert te.size()[3] < desired_count, f"{te.size()} has too many channels to extend to {desired_count}"
+    assert te.size()[-1] < desired_count, f"{te.size()} has too many channels to extend to {desired_count}"
     if mode == 0:
-        return torch.cat((te, torch.zeros(list(te.size())[:3] + [desired_count - te.size()[3]])), dim=3)
+        return torch.cat((te, torch.zeros(list(te.size())[:-1] + [desired_count - te.size()[-1]])), dim=-1)
     elif mode == 1:
-        chopcount = te.size()[3] - desired_count % te.size()[3]
-        if chopcount == te.size()[3]:
+        chopcount = te.size()[-1] - desired_count % te.size()[-1]
+        if chopcount == te.size()[-1]:
             chopcount = 0
-        repeatcount = ceil(desired_count / te.size()[3])
+        repeatcount = ceil(desired_count / te.size()[-1])
         repeated = te.repeat((1, 1, 1, repeatcount))
         if chopcount > 0:
             chopped = repeated.split((desired_count, chopcount), dim=3)
@@ -334,8 +332,8 @@ def extend_channels(te: torch.Tensor, desired_count: int, mode: int=0):
             chopped = repeated
         return chopped
     elif mode == 2:
-        first, last = te.split((te.size()[3]-1, 1), dim=3)
-        return torch.cat((first, last.repeat((1, 1, 1, desired_count - te.size()[3]))), dim=3)
+        first, last = te.split((te.size()[-1]-1, 1), dim=-1)
+        return torch.cat((first, last.repeat((1, 1, 1, desired_count - te.size()[-1]))), dim=-1)
     
     raise Exception(f"Unrecognized channel extension mode {mode}")
 
@@ -344,24 +342,32 @@ def shrink_channels(te: torch.Tensor, desired_count: int, mode: int=0):
     0: Chop off\n
     1: Pair downscale
     """
-    assert te.size()[3] > desired_count, f"{te.size()} has too few channels to shrink to {desired_count}"
+    assert te.size()[-1] > desired_count, f"{te.size()} has too few channels to shrink to {desired_count}"
     if mode == 0:
-        first, _ = te.split((desired_count, te.size()[3] - desired_count), dim=3)
+        first, _ = te.split((desired_count, te.size()[-1] - desired_count), dim=-1)
         return first
     elif mode == 1:
-        splits = te.split(ceil(te.size()[3] / desired_count), dim=3)
-        avg = [s.mean(dim=3).unsqueeze(3) for s in splits]
-        return torch.cat(avg, dim=3)
+        splits = te.split(ceil(te.size()[-1] / desired_count), dim=3)
+        avg = [s.mean(dim=-1).unsqueeze(-1) for s in splits]
+        return torch.cat(avg, dim=-1)
     
     raise Exception(f"Unrecognized channel extension mode {mode}")
 
-def resize_channels(te: torch.Tensor, desired_count: int, mode_shrink: int=0, mode_extend: int=0):
+def resize_channels(te: torch.Tensor | list, desired_count: int, mode_shrink: int=0, mode_extend: int=0):
+    islist = type(te) == list
+    if islist:
+        te = torch.Tensor(te)
+
     if te.size()[3] == desired_count:
-        return te
+        res = te
     if te.size()[3] > desired_count:
-        return shrink_channels(te, desired_count, mode_shrink)
+        res = shrink_channels(te, desired_count, mode_shrink)
     if te.size()[3] < desired_count:
-        return extend_channels(te, desired_count, mode_extend)
+        res = extend_channels(te, desired_count, mode_extend)
+    
+    if islist:
+        return te.tolist()
+    return te
     
 def ensure_samesize_channels(*blens: BlenderData, force=None):
     first_te = None

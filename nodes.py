@@ -1223,10 +1223,10 @@ class BlenderCrop:
                 "Rescale": ("BOOLEAN", {"default": False}),
                 "Relative": ("BOOLEAN", {"default": False}),
                 #"Vector": ("BOOLEAN", {"default": False}),
-                "Left": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
-                "Right": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
-                "Up": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
-                "Down": ("FLOAT", {"default": 0, "min": -inf, "max": inf, "step": 0.1}),
+                **FLOAT_INPUT("Left", 0, -inf, inf, 0.1),
+                **FLOAT_INPUT("Right", 0, -inf, inf, 0.1),
+                **FLOAT_INPUT("Up", 0, -inf, inf, 0.1),
+                **FLOAT_INPUT("Down", 0, -inf, inf, 0.1),
                 **COLOR_INPUT("Color", 1.0, True),
             }
         }
@@ -1243,22 +1243,27 @@ class BlenderCrop:
     def crop(self, **kwargs):
         rescale = kwargs["Rescale"]
         relative = kwargs["Relative"]
-        xp, xn, yp, yn = kwargs["Left"], kwargs["Right"], kwargs["Up"], kwargs["Down"]
 
+
+        xp = -BlenderData(kwargs, "Left").as_primitive_float()
+        xn = -BlenderData(kwargs, "Right").as_primitive_float()
+        yn = -BlenderData(kwargs, "Up").as_primitive_float()
+        yp = -BlenderData(kwargs, "Down").as_primitive_float()
+        
         b_col = BlenderData(kwargs, "Color")
         guess_canvas(b_col)
 
         if not relative:
-            newcanvas = [b_col.canvas[0] + yp + yn, b_col.canvas[1] + xp + xn]
-            pixsize = [newcanvas[0] / b_col.canvas[0], newcanvas[1] / b_col.canvas[1]]
+            newcanvas = [round(b_col.canvas[0] + yp + yn), round(b_col.canvas[1] + xp + xn)]
+            pixsize = [0.5 / b_col.canvas[0], 0.5 / b_col.canvas[1]]
             off = [pixsize[1] * (xp - xn), pixsize[0] * (yp - yn)]
         else:
-            newcanvas = [b_col.canvas[0]*(1+yp+yn), b_col.canvas[1]*(1+xp+xn)]
+            newcanvas = [round(b_col.canvas[0]*(1+yp+yn)), round(b_col.canvas[1]*(1+xp+xn))]
             off = [xp-xn, yp-yn]
 
         if not rescale:
-            b_col.set_canvas(newcanvas, False, off)
+            b_col.set_canvas(newcanvas, True, off)
         else:
-            b_col.set_canvas(newcanvas, True)
+            b_col.set_canvas(newcanvas, False)
         
         return (b_col, b_col.as_out(), )
