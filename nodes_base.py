@@ -430,7 +430,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
 # (0.0, 0.999) --- (0.999, 0.999)
 #      |                  |
 # (0.0,   0.0) --- (0.999,   0.0)
-def make_uv(width, height, device="cpu"):
+def make_uv(width, height, w1 = True, device="cpu"):
     u_1d1c = torch.linspace(0.0, 1.0, width+1)[:-1]
     u_1d3c = torch.stack((u_1d1c, torch.zeros_like(u_1d1c), torch.zeros_like(u_1d1c)), dim=-1)
     u_2d = u_1d3c.repeat((height, 1, 1)).to(device)
@@ -439,7 +439,11 @@ def make_uv(width, height, device="cpu"):
     v_1d3c = torch.stack((torch.zeros_like(v_1d1c), v_1d1c, torch.zeros_like(v_1d1c)), dim=-1)
     v_2d = v_1d3c.repeat((width, 1, 1)).permute(1, 0, 2).to(device)
 
-    return (u_2d+v_2d).unsqueeze(0)
+    wh = (width, height)
+    w = torch.stack((torch.zeros(wh), torch.zeros(wh), torch.ones(wh)), dim=-1)
+    if not w1: w = w * 0.0
+
+    return (u_2d+v_2d+w).unsqueeze(0)
 
 COLMAX = 1.0 
 # Blender has soft min and max. 
