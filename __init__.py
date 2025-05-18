@@ -39,7 +39,7 @@ NODE_CLASS_MAPPINGS = {
     #"BlenderCornerPin": BlenderCornerPin,
     #"BlenderDisplace": BlenderDisplace,
     #"BlenderFlip": BlenderFlip,
-    #"BlenderMapUV": BlenderMapUV,
+    "BlenderMapUV": BlenderMapUV,
     "BlenderLensDistortion": BlenderLensDistortion,
     #"BlenderMovieDistortion": BlenderMovieDistortion,
 
@@ -82,7 +82,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     #"BlenderCornerPin": "Corner Pin",
     #"BlenderDisplace": "Displace",
     #"BlenderFlip": "Flip",
-    #"BlenderMapUV": "Map UV",
+    "BlenderMapUV": "Map UV",
     "BlenderLensDistortion": "Lens Distortion",
     #"BlenderMovieDistortion": "Movie Distortion",
 

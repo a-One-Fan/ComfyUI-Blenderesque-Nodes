@@ -50,7 +50,7 @@ Convert Blender Data to float, image, or get its canvas size.
 <br>
 <br>
 Functionality:
-<li><span style="color:IndianRed">Transform/Crop - Uncrop and auto rescale ❌</span></li>
+<li><span style="color:LightGreen">Transform/Crop - Uncrop (extend) and auto rescale ✅</span></li>
 <li><span style="color:IndianRed">Transform/Lens Distortion - Handle alpha ❌</span></li>
 </details>
 
@@ -119,7 +119,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Crop ✅</span></li>
 <li><span style="color:IndianRed">Displace ❌</span></li>
 <li><span style="color:IndianRed">Flip ❌</span></li>
-<li><span style="color:IndianRed">Map UV ❌</span></li>
+<li><span style="color:IndianRed">Map UV 🔵 (pixelated?)</span></li>
 <li><span style="color:GoldenRod">Lens Distortion 🔵 (Border of image is handled a bit differently than Blender; alpha is ignored, like in Blender)</span></li>
 <li><span style="color:IndianRed">Movie Distortion ❌</span></li>
 </ul>

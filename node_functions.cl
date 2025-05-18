@@ -12,11 +12,11 @@ float4 lerp4(float4 a, float4 b, float fac) {
 }
 
 
-// UV:  (0.0,      0.0) ----- (0.999999,      0.0)
-//             |                          |
-//      (0.999999, 0.0) ----- (0.999999, 0.999999)
+// UV:  (0.0,   0.0) ----- (0.999,   0.0)
+//             |                  |
+//      (0.999, 0.0) ----- (0.999, 0.999)
 
-// 1D: (0.0, 0.0) ----- (0.999999, 0.0) - (0.0, 0.01) - (0.999999, 0.01) ---- (0.0, 0.999999) --- (0.999999, 0.999999)
+// 1D: (0.0, 0.0) ----- (0.999, 0.0) - (0.0, 0.01) ---- (0.999, 0.01) ---- (0.0, 0.999) --- (0.999, 0.999)
 
 float4 simple_sample(__global const float* tex, float uvx, float uvy, int resx, int resy) {
     int pixx = uvx * resx;
@@ -346,4 +346,20 @@ __kernel void execute_screen_distortion( __global const float* tex, const int si
     out[gid*4+1] = pix.y;
     out[gid*4+2] = pix.z;
     out[gid*4+3] = pix.w;
+}
+
+__kernel void map_uv(__global const float* tex, const int texx, const int texy,
+                     __global const float* uvw,  const int uvx,  const int uvy,
+                     const int interp, const int extend, __global float* out) {
+    int gid = get_global_id(0);
+
+    float3 uvw_converted = (float3)(uvw[gid*3], uvw[gid*3+1], uvw[gid*3+2]);
+    uvw_converted.y = 1.0f - uvw_converted.y; // Blender UV is flipped on Y compared to this
+
+    float4 col = sample(tex, uvw_converted.x, uvw_converted.y, texx, texy, interp, extend);
+
+    out[gid*4+0] = col.x;
+    out[gid*4+1] = col.y;
+    out[gid*4+2] = col.z;
+    out[gid*4+3] = col.w * uvw_converted.z;
 }

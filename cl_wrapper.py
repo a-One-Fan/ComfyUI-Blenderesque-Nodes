@@ -26,15 +26,19 @@ class OpenCLContext:
 
 global_ish_context = OpenCLContext()
 
-# ([1]x) [Height] x [Width] x [Channels] -> [Channels*Width*Height]
 def te_to_np_buf(te: torch.Tensor):
+    """
+    ([1]x) [Height] x [Width] x [Channels] -> [Channels * Width * Height]
+    """
     if len(te.size()) == 4:
         te = te[0]
     return te.contiguous().ravel().numpy()
 
-# Size: Height x Width
-# [Channels*Width*Height] -> [H] x [W] x [Channels]
 def np_buf_to_te(buf, size):
+    """
+    Size: Height x Width\n
+    [Channels * Width * Height] -> [H] x [W] x [Channels]
+    """
     res = torch.from_numpy(buf).to(dtype=torch.float32).reshape((size[0], size[1], 4))
     return res
 
@@ -151,5 +155,50 @@ def lens_distortion(
         cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
 
         results.append(np_buf_to_te(res_np_floats, size))
+
+    return torch.stack(results, dim=0)
+
+def map_uvw(
+    te: torch.FloatTensor,
+    uvw: torch.FloatTensor,
+    interpolation: int,
+    extension: int
+):
+    """
+    Image is Batch x Height A x Width A x 4\n
+    UVW is 1 or Batch x Height B x Width B x 3 \n
+    ##### Interpolation: 
+    - 0 = closest
+    - 1 = linear
+    - 2 = cubic
+    ##### Extension:
+    - 0 = clip
+    - 1 = repeat
+    - 2 = extend
+    - 3 = mirror\n
+    """
+    ctx = global_ish_context
+    mf = cl.mem_flags
+
+    results = []
+
+    for b in range(te.size()[0]):
+        te_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(te[b]))
+        uv_maybe_batch = uvw[b] if uvw.size()[0] > 1 else uvw[0]
+        uv_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uv_maybe_batch))
+        
+        pixels = uvw.size()[2] * uvw.size()[1]
+        res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 4 * np.dtype(np.float32).itemsize)
+        res_np_floats = np.empty(pixels * 4, dtype=np.float32)
+
+        tr = ctx.prog.map_uv
+        tr( ctx.queue, (pixels,), None, 
+            te_buf, np.int32(te.size()[2]), np.int32(te.size()[1]), 
+            uv_buf, np.int32(uvw.size()[2]), np.int32(uvw.size()[1]),
+            np.int32(interpolation), np.int32(extension), res_cl_floats)
+
+        cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
+
+        results.append(np_buf_to_te(res_np_floats, (uvw.size()[1], uvw.size()[2])))
 
     return torch.stack(results, dim=0)

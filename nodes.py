@@ -21,13 +21,13 @@ class BlenderValue:
             },
         }
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), "FLOAT", )
+    RETURN_TYPES = (*BLENDER_OUTPUT(), "FLOAT", "INT")
     FUNCTION = "get_value"
     CATEGORY = "Blender/Input" 
     
     def get_value(self, Value):
         bd = BlenderData(Value)
-        return (bd, bd.as_out(), Value)
+        return (bd, bd.as_out(), Value, int(Value))
     
 class BlenderRGB:
     def __init__(self):
@@ -1265,5 +1265,47 @@ class BlenderCrop:
             b_col.set_canvas(newcanvas, True, off)
         else:
             b_col.set_canvas(newcanvas, False)
+        
+        return (b_col, b_col.as_out(), )
+    
+class BlenderMapUV:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                #"Filter Type": (("Anisotropic", "Nearest"), {"default": "Anisotropic"}),
+                **FILTER_AND_EXTENSION(),
+                **COLOR_INPUT("Image"),
+                **VECTOR_INPUT("UV", (0.0, 0.0, 1.0)),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_NAMES = ("Image", "Image", )
+    FUNCTION = "mapuv"
+    CATEGORY = "Blender/Transform"
+    
+    def mapuv(self, **kwargs):
+        #filter = kwargs["Filter Type"]
+        filter, extension = get_filter_extension(kwargs)
+
+        b_im = BlenderData(kwargs, "Image")
+        b_uvw = BlenderData(kwargs, "UV")
+        
+        #guess_canvas(b_im, b_uvw)
+
+        im = b_im.as_rgba()
+        uvw = b_uvw.as_vector(im.size()[0], 3, 0, 3)
+
+        res = map_uvw(im, uvw, filter, extension)
+
+        b_col = BlenderData(res)
         
         return (b_col, b_col.as_out(), )
