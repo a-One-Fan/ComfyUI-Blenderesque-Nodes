@@ -1,33 +1,23 @@
 import { app } from "../../../scripts/app.js"
 
-const TypeSlot = {
-    Input: 1,
-    Output: 2,
-};
+import { 
+    EXTENSION_NAME,
+    NODES_ALL,
+    CONVERTED_TYPE, RELABEL_MAP, 
+    WIDGET_SUFFIXES, SOLO_INPUT, SOLO_WIDGET, INPUT_DELETED_NAME,
+    HEIGHT_INPUT, HEIGHT_OUTPUT, HEIGHT_WIDGET, HEIGHT_HEADER_OFFSET,
 
-const TypeSlotEvent = {
-    Connect: true,
-    Disconnect: false,
-};
+    COLOR_FLOAT_CONNECTED, COLOR_FLOAT_DISCONNECTED, COLOR_RGB_CONNECTED, COLOR_RGB_DISCONNECTED,
+    COLOR_VEC_CONNECTED, COLOR_VEC_DISCONNECTED, COLOR_BOOL_CONNECTED, COLOR_BOOL_DISCONNECTED,
+    COLOR_IMAGE_CONNECTED, COLOR_IMAGE_DISCONNECTED, COLOR_DISABLED,
 
-const COLSTEP = 0.005;
-const inf = 100000000;
+    MATH_NAMEMAP,
 
-const CONVERTED_TYPE = "converted-widget";
-const GET_CONFIG = Symbol();
+    COLSTEP, inf, 
 
-const COLOR_RGB_CONNECTED = "#C7C729"
-const COLOR_RGB_DISCONNECTED = COLOR_RGB_CONNECTED
-const COLOR_VEC_CONNECTED = "#6363C7"
-const COLOR_VEC_DISCONNECTED = COLOR_VEC_CONNECTED
-const COLOR_FLOAT_CONNECTED = "#A1A1A1"
-const COLOR_FLOAT_DISCONNECTED = COLOR_FLOAT_CONNECTED
-const COLOR_BOOL_CONNECTED = "#CCA6D6"
-const COLOR_BOOL_DISCONNECTED = COLOR_BOOL_CONNECTED
-const COLOR_IMAGE_CONNECTED = "#633863"
-const COLOR_IMAGE_DISCONNECTED = COLOR_IMAGE_CONNECTED
+} from "./consts.js"
 
-const COLOR_DISABLED = "#00000088"
+import { NumberWidgetBlender } from "./widgets.js"
 
 // TODO: Import these?
 function hideWidget(node, widget, suffix = "") {
@@ -68,10 +58,6 @@ function showWidget(widget) {
     }
 }
 
-const WIDGET_SUFFIXES = ["F", "R", "G", "B", "A", "X", "Y", "Z"];
-const SOLO_WIDGET = "solo_widget";
-const SOLO_INPUT = "solo_input";
-const INPUT_DELETED_NAME = "X";
 function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
     let pairs = [];
     for(let i=0; i<node.inputs.length; i++) {
@@ -134,6 +120,12 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
     return ordered;
 }
 
+function convert_widgets(node) { // TODO: don't mix camelcase and snake case
+    for(let i=0; i<node.widgets.length; i++){
+        node.widgets[i] = convertWidget(node.widgets[i]);
+    }
+}
+
 function rearrange_inputs_and_widgets(node, preferred_order = []) {
     let ordered = get_inputs_widgets_as_pairlist(node, preferred_order);
 
@@ -167,12 +159,13 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
         }
     }
 
-    let currentHeight = node.outputs.length * 24 + 6;
+    let currentHeight = node.outputs.length * HEIGHT_OUTPUT + HEIGHT_HEADER_OFFSET;
+    node.widgets_start_y = currentHeight;
     for(let i=0; i<ordered.length; i++) {
         if(ordered[i][1] == SOLO_WIDGET) {
-            ordered[i][0].y = currentHeight;
+            ordered[i][0].force_y = currentHeight;
         } else if (ordered[i][1] == SOLO_INPUT || ordered[i][2] == 0) {
-            ordered[i][0].pos = [0, currentHeight+10.5];
+            ordered[i][0].pos = [0, currentHeight + HEIGHT_INPUT];
             let desired_label = ordered[i][0].name;
             if(ordered[i][0].backupLabel) {
                 desired_label = ordered[i][0].backupLabel;
@@ -185,15 +178,15 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
             ordered[i][0].label = desired_label;
         } else {
             ordered[i][0].label = "   ";
-            ordered[i][0].pos = [0, currentHeight+10.5];
+            ordered[i][0].pos = [0, currentHeight + HEIGHT_INPUT];
 
             let wids=ordered[i][1];
             for(let j=0; j<wids.length; j++) {
                 if(wids[j].type == CONVERTED_TYPE) {
                     continue;
                 }
-                wids[j].y = currentHeight;
-                currentHeight += 24;
+                wids[j].force_y = currentHeight;
+                currentHeight += HEIGHT_WIDGET;
             }
             if(ordered[i][0].color_hint){
                 ordered[i][0].color_on = ordered[i][0].color_hint;
@@ -213,12 +206,12 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                 }
             }
             ordered[i][0].shape = 0;
-            currentHeight -= (ordered[i][2] > 0) * 24;
+            currentHeight -= (ordered[i][2] > 0) * HEIGHT_WIDGET;
         }
-        currentHeight += 24;
+        currentHeight += HEIGHT_WIDGET;
     }
 
-    node._size[1] = currentHeight + 10;
+    node._size[1] = currentHeight / 2.0 + HEIGHT_INPUT;
 }
 
 function recalculateHeight(node) {
@@ -232,6 +225,16 @@ function recalculateHeight(node) {
         totalHeight += 21;
     }
     node._size[1] = totalHeight;
+}
+
+function convertWidget(wid) {
+    let newwid = wid;
+
+    if (wid.type == "number"){
+        newwid = new NumberWidgetBlender(wid);
+    }
+
+    return newwid;
 }
 
 // TODO: Better names?
@@ -273,12 +276,15 @@ function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = ()
     if (wi == -1) {
         w = obj.addWidget(type, name, def, callback, properties, {min: min, max: max, step: step});
         w.label = label;
+        wi = obj.widgets.findIndex((w) => w.name == name);
     }else{
         w = obj.widgets[wi];
         showWidget(w);
         w.type = type;
         w.label = label;
     }
+
+    obj.widgets[wi] = convertWidget(obj.widgets[wi]);
 }
 
 function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false) {
@@ -334,17 +340,6 @@ function REMOVE_VECTOR_INPUT(obj, name) {
     __REMOVE_WIDGET(obj, name+"Z");
 }
 
-const RELABEL_MAP = {
-    "F": "",
-    "R": " Red",
-    "G": " Green",
-    "B": " Blue",
-    "A": " Alpha",
-    "X": " X",
-    "Y": " Y",
-    "Z": " Z",
-}
-
 function relabel_widgets(node) {
     for(let i=0; i<node.widgets.length; i++) {
         let w = node.widgets[i];
@@ -356,36 +351,6 @@ function relabel_widgets(node) {
         }
     }
 }
-
-const EXTENSION_NAME = "blenderesque_dynamic";
-
-const NODES_INPUT = ["BlenderValue", "BlenderRGB", "BlenderUV"];
-const NODES_COLOR = ["BlenderBrightnessContrast", "BlenderGamma", "BlenderHueSaturationValue", "BlenderInvertColor", 
-    "BlenderExposure", "BlenderTonemap", "BlenderAlphaOver", "BlenderZCombine", "BlenderAlphaConvert", "BlenderConvertColorspace",
-    "BlenderSetAlpha",
-];
-const NODES_CONVERTER = ["BlenderBlackbody", "BlenderClamp", "BlenderCombineColor", "BlenderCombineXYZ", "BlenderMapRange", 
-    "BlenderMath", "BlenderMix", "BlenderRGBtoBW", "BlenderSeparateColor", "BlenderSeparateXYZ", "BlenderVectorMath", "BlenderWavelength",
-];
-const NODES_TRANSFORM = ["BlenderRotate", "BlenderScale", "BlenderTransform", "BlenderTranslate", "BlenderCornerPin", "BlenderCrop",
-    "BlenderDisplace", "BlenderFlip", "BlenderMapUV", "BlenderLensDistortion", "BlenderMovieDistortion",
-];
-const NODES_TEXTURE = ["BlenderBrickTexture", "BlenderCheckerTexture", "BlenderGaborTexture", "BlenderGradientTexture", "BlenderMagicTexture",
-    "BlenderNoiseTexture", "BlenderVoronoiTexture", "BlenderWaveTexture", "BlenderWhiteNoiseTexture",
-];
-const NODES_FILTER = ["BlenderBlur", "BlenderAntiAliasing", "BlenderDespeckle", "BlenderDilateErode", "BlenderFilter", "BlenderGlare", 
-    "BlenderKuwahara", "BlenderPixelate", "BlenderPosterize", "BlenderSunBeams"
-];
-
-const NODES_ALL = [
-    {nodes: NODES_INPUT, color: "#83314A"}, // 0
-    {nodes: NODES_COLOR, color: "#6E6E1D"}, // 1
-    {nodes: NODES_CONVERTER, color: "#246283"}, // 2
-    {nodes: NODES_TRANSFORM, color: "#3B5959"}, // 3
-    {nodes: NODES_TEXTURE, color: "#79461D"}, // 4
-    {nodes: NODES_FILTER, color: "#3F2750"}, // 5
-    {nodes: 0, color: "#3C3C83"}, // 6 Vector nodes?
-];
 
 function find_blender_node(name) {
     for(let i=0; i<NODES_ALL.length; i++) {
@@ -599,53 +564,20 @@ function register_mix(nodeType, nodeData) {
                     }
                 }
 
-                if(widgetval == "Vector") { // Non-uniform factor
+                if(widgetval == "Vector") { // TODO Non-uniform factor
 
                 }
                 
                 this.graph.setDirtyCanvas(true);
                 rearrange_inputs_and_widgets(this);
+                relabel_widgets(this);
+                console.log(this);
             }
         
         w_dtype.callback(w_dtype.value);
 
         return me;
     }
-}
-
-const MATH_NAMEMAP = {
-    "Multiply Add": ["Value", "Multiplier", "Addend"],
-    "Power": ["Base", "Exponent"],
-    "Logarithm": ["Value", "Base"],
-    "Square Root": ["Value"],
-    "Inverse Square Root": ["Value"],
-    "Absolute": ["Value"],
-    "Exponent": ["Value"],
-    "Less Than": ["Value", "Threshold"],
-    "Greater Than": ["Value", "Threshold"],
-    "Sign": ["Value"],
-    "Compare": ["Value", "Value", "Epsilon"],
-    "Smooth Minimum": ["Value", "Value", "Distance"],
-    "Smooth Maximum": ["Value", "Value", "Distance"],
-    "Round": ["Value"],
-    "Floor": ["Value"],
-    "Ceil": ["Value"],
-    "Truncate": ["Value"],
-    "Fraction": ["Value"],
-    "Wrap": ["Value", "Min", "Max"],
-    "Snap": ["Value", "Increment"],
-    "Ping-Pong": ["Value", "Scale"],
-    "Sine": ["Value"],
-    "Cosine": ["Value"],
-    "Tangent": ["Value"],
-    "Arcsine": ["Value"],
-    "Arccosine": ["Value"],
-    "Arctangent": ["Value"],
-    "Hyperbolic Sine": ["Value"],
-    "Hyperbolic Cosine": ["Value"],
-    "Hyperbolic Tangent": ["Value"],
-    "To Radians": ["Degrees"],
-    "To Degrees": ["Radians"],
 }
 
 function register_math(nodeType, nodeData) {
@@ -710,6 +642,7 @@ app.registerExtension({
                 this.bgcolor = "#303030";
                 this.boxcolor = "#DDDDDD";
                 this.constructor.title_text_color = "#E8E8E8";
+                convert_widgets(this);
                 relabel_widgets(this);
                 rearrange_inputs_and_widgets(this);
 
