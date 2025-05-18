@@ -3,6 +3,10 @@ import { CONVERTED_TYPE } from "./consts.js"
 var __defProp2 = Object.defineProperty;
 var __name = (target, value) => __defProp2(target, "name", { value, configurable: true });
 
+function getWidgetStep(options2) {
+    return options2.step2 || (options2.step || 10) * 0.1;
+}
+
 class BaseWidget {
     static {
       __name(this, "BaseWidget");
@@ -196,29 +200,29 @@ class NumberWidgetBlender extends BaseSteppedWidget {
     }
 
     draw(ctx, node, widget_width, y2, H2, lowQuality) {
-            this.drawWidget(ctx, {y: y2, width: widget_width, show_text: true, margin: BaseWidget.margin})
-        }
+        this.drawWidget(ctx, {y: y2, width: widget_width, show_text: true, margin: BaseWidget.margin})
+    }
 
     onClick({ e, node, canvas }) {
-      const x = e.canvasX - node.pos[0];
-      const width = this.width || node.size[0];
-      const delta = x < 40 ? -1 : x > width - 40 ? 1 : 0;
-      if (delta) {
-        this.setValue(this.value + delta * getWidgetStep(this.options), { e, node, canvas });
-        return;
-      }
-      canvas.prompt("Value", this.value, (v) => {
-        if (/^[\d\s()*+/-]+|\d+\.\d+$/.test(v)) {
-          try {
-            v = eval(v);
-          } catch {
-          }
+        const x = e.canvasX - node.pos[0];
+        const width = this.width || node.size[0];
+        const delta = x < 40 ? -1 : x > width - 40 ? 1 : 0;
+        if (delta) {
+            this.setValue(this.value + delta * getWidgetStep(this.options), { e, node, canvas });
+            return;
         }
-        const newValue = Number(v);
-        if (!isNaN(newValue)) {
-          this.setValue(newValue, { e, node, canvas });
-        }
-      }, e);
+        canvas.prompt("Value", this.value, (v) => {
+            if (/^[\d\s()*+/-]+|\d+\.\d+$/.test(v)) {
+                try {
+                    v = eval(v);
+                } catch {
+                }
+            }
+            const newValue = Number(v);
+            if (!isNaN(newValue)) {
+                this.setValue(newValue, { e, node, canvas });
+            }
+        }, e);
     }
     /**
      * Handles drag events for the number widget
@@ -230,6 +234,10 @@ class NumberWidgetBlender extends BaseSteppedWidget {
         const delta2 = x2 < 40 ? -1 : x2 > width2 - 40 ? 1 : 0;
         if (delta2 && (x2 > -3 && x2 < width2 + 3)) return;
         this.setValue(this.value + (e2.deltaX ?? 0) * getWidgetStep(this.options), { e: e2, node: node2, canvas: canvas2 });
+    }
+
+    mouse(e2, co, node2){
+        this.onDrag({e: e2, node: node2, canvas: {graph_mouse: co}})
     }
 }
 
