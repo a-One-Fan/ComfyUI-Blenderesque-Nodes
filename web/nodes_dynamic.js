@@ -571,7 +571,6 @@ function register_mix(nodeType, nodeData) {
                 this.graph.setDirtyCanvas(true);
                 rearrange_inputs_and_widgets(this);
                 relabel_widgets(this);
-                console.log(this);
             }
         
         w_dtype.callback(w_dtype.value);
