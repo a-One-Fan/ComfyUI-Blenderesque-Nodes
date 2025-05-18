@@ -1,5 +1,5 @@
 Move inputs with input.pos
-Move widgets with widget.y
+Move widgets with widget.y <- new comfy update makes this no longer work. Make custom widgets instead.
 
 Socket shapes:
 Default = Full circle

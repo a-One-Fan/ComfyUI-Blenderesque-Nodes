@@ -38,6 +38,7 @@ Hopefully in the future I'll look into integrating this with https://github.com/
 <li><span style="color:LightGreen">Merged input sockets and default values ("widgets") ✅</span></li>
 <li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
+<li>Currently, Comfy does not support loading EXR images. Various vector passes (e.g. UV) need 32 bit data, and will look much worse with 8 bit data. -</span></li>
 </ul>
 </details>
 
@@ -119,7 +120,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">Crop ✅</span></li>
 <li><span style="color:IndianRed">Displace ❌</span></li>
 <li><span style="color:IndianRed">Flip ❌</span></li>
-<li><span style="color:IndianRed">Map UV 🔵 (pixelated?)</span></li>
+<li><span style="color:IndianRed">Map UV ✅ (Bit depth note*)</span></li>
 <li><span style="color:GoldenRod">Lens Distortion 🔵 (Border of image is handled a bit differently than Blender; alpha is ignored, like in Blender)</span></li>
 <li><span style="color:IndianRed">Movie Distortion ❌</span></li>
 </ul>

@@ -184,17 +184,17 @@ def map_uvw(
 
     for b in range(te.size()[0]):
         te_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(te[b]))
-        uv_maybe_batch = uvw[b] if uvw.size()[0] > 1 else uvw[0]
-        uv_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uv_maybe_batch))
+        uvw_maybe_batch = uvw[b] if uvw.size()[0] > 1 else uvw[0]
+        uvw_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uvw_maybe_batch))
         
         pixels = uvw.size()[2] * uvw.size()[1]
         res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 4 * np.dtype(np.float32).itemsize)
         res_np_floats = np.empty(pixels * 4, dtype=np.float32)
 
-        tr = ctx.prog.map_uv
-        tr( ctx.queue, (pixels,), None, 
+        mapuvw = ctx.prog.map_uv
+        mapuvw( ctx.queue, (pixels,), None, 
             te_buf, np.int32(te.size()[2]), np.int32(te.size()[1]), 
-            uv_buf, np.int32(uvw.size()[2]), np.int32(uvw.size()[1]),
+            uvw_buf, np.int32(uvw.size()[2]), np.int32(uvw.size()[1]),
             np.int32(interpolation), np.int32(extension), res_cl_floats)
 
         cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
