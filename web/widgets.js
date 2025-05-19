@@ -236,8 +236,18 @@ class NumberWidgetBlender extends BaseSteppedWidget {
         this.setValue(this.value + (e2.deltaX ?? 0) * getWidgetStep(this.options), { e: e2, node: node2, canvas: canvas2 });
     }
 
+    // Pressure = 0.5 -> mouse down
+    // Pressure = 0 -> mouse up
     mouse(e2, co, node2){
-        this.onDrag({e: e2, node: node2, canvas: {graph_mouse: co}})
+        if(e2.pressure == 0){
+            this.onClick({e: e2, node: node2, canvas: this.currentCanvas })
+            this.currentCanvas = undefined
+        }else{
+            this.onDrag({e: e2, node: node2, canvas: {graph_mouse: co}})
+        }
+    }
+    onPointerDown(pointer, node2, canvas){
+        this.currentCanvas = canvas
     }
 }
 
