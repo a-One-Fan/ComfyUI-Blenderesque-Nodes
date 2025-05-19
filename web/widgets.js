@@ -211,7 +211,8 @@ class NumberWidgetBlender extends BaseSteppedWidget {
             this.setValue(this.value + delta * getWidgetStep(this.options), { e, node, canvas });
             return;
         }
-        canvas.prompt("Value", this.value, (v) => {
+        const promptname = this.label || "Value";
+        canvas.prompt(promptname, this.value, (v) => {
             if (/^[\d\s()*+/-]+|\d+\.\d+$/.test(v)) {
                 try {
                     v = eval(v);
@@ -232,7 +233,12 @@ class NumberWidgetBlender extends BaseSteppedWidget {
         const width2 = this.width || node2.width;
         const x2 = e2.canvasX - node2.pos[0];
         const delta2 = x2 < 40 ? -1 : x2 > width2 - 40 ? 1 : 0;
-        if (delta2 && (x2 > -3 && x2 < width2 + 3)) return;
+        if (delta2 && (x2 > -3 && x2 < width2 + 3)){
+            return;
+        } 
+        if (e2.deltaX){
+             this.hasDragged = true;
+        }
         this.setValue(this.value + (e2.deltaX ?? 0) * getWidgetStep(this.options), { e: e2, node: node2, canvas: canvas2 });
     }
 
@@ -240,14 +246,17 @@ class NumberWidgetBlender extends BaseSteppedWidget {
     // Pressure = 0 -> mouse up
     mouse(e2, co, node2){
         if(e2.pressure == 0){
-            this.onClick({e: e2, node: node2, canvas: this.currentCanvas })
-            this.currentCanvas = undefined
+            if(!this.hasDragged){
+                this.onClick({e: e2, node: node2, canvas: this.currentCanvas });
+            }
+            this.currentCanvas = undefined;
         }else{
-            this.onDrag({e: e2, node: node2, canvas: {graph_mouse: co}})
+            this.onDrag({e: e2, node: node2, canvas: {graph_mouse: co}});
         }
     }
     onPointerDown(pointer, node2, canvas){
-        this.currentCanvas = canvas
+        this.currentCanvas = canvas;
+        this.hasDragged = false;
     }
 }
 
