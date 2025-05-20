@@ -1,4 +1,4 @@
-import { CONVERTED_TYPE } from "./consts.js"
+import { CONVERTED_TYPE, COLOR_FACTOR, COLOR_FACTOR_DARK, COLOR_TEXT, COLOR_WIDGET, COLOR_OUTLINE } from "./consts.js"
 
 var __defProp2 = Object.defineProperty;
 var __name = (target, value) => __defProp2(target, "name", { value, configurable: true });
@@ -6,6 +6,12 @@ var __name = (target, value) => __defProp2(target, "name", { value, configurable
 function getWidgetStep(options2) {
     return options2.step2 || (options2.step || 10) * 0.1;
 }
+
+function maprange(val, oldmin, oldmax, newmin, newmax) {
+    const fac = (val - oldmin) / (oldmax - oldmin);
+    return newmin + fac*(newmax - newmin);
+}
+
 
 class BaseWidget {
     static {
@@ -170,6 +176,35 @@ class NumberWidgetBlender extends BaseSteppedWidget {
         ctx.beginPath();
         if (show_text){
             ctx.roundRect(margin, y2, width2 - margin * 2, height, [height * 0.5]);
+            if((this.label && ["fac", "factor"].includes(this.label.toLowerCase())) || this.isFactor){
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.fillStyle = COLOR_FACTOR_DARK;
+
+                // Maximum height, for reducing height when factor is near the left side <-
+                let hmax = Math.max(margin / 2.0 - (width2 - margin * 2) * this.value, 0.0);
+                hmax = maprange(hmax, 0.0, margin/2.0, height, 0.0);
+                const yadd = maprange(hmax, 0.0, height, height / 2.0, 0.0);
+                //     ^ When it's at the left side, move it a bit downwards to align with the actual centre
+
+                // Sharp corner in middle, round corner when near right side ->
+                const big = (width2 - margin * 2) * this.value + margin * 3.0 - width2;
+                let hright = Math.max(0.0, big);
+                hright = Math.min(hright, hmax);
+
+                ctx.roundRect(margin, y2+yadd, (width2 - margin * 2) * this.value, hmax, [hmax * 0.5, hright, hright, hmax * 0.5] );
+                ctx.fill();
+
+                ctx.beginPath(); // For proper outline (it has to be above the factor)
+                ctx.fillStyle = "#00000000";
+                ctx.roundRect(margin, y2, width2 - margin * 2, height, [height * 0.5]);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.fillStyle = this.background_color;
+            }
         } else {
             ctx.rect(margin, y2, width2 - margin * 2, height);
         }
@@ -200,7 +235,7 @@ class NumberWidgetBlender extends BaseSteppedWidget {
     }
 
     draw(ctx, node, widget_width, y2, H2, lowQuality) {
-        this.drawWidget(ctx, {y: y2, width: widget_width, show_text: true, margin: BaseWidget.margin})
+        this.drawWidget(ctx, {y: y2, width: widget_width, show_text: !lowQuality, margin: BaseWidget.margin})
     }
 
     onClick({ e, node, canvas }) {
@@ -232,10 +267,6 @@ class NumberWidgetBlender extends BaseSteppedWidget {
     onDrag({ e: e2, node: node2, canvas: canvas2 }) {
         const width2 = this.width || node2.width;
         const x2 = e2.canvasX - node2.pos[0];
-        const delta2 = x2 < 40 ? -1 : x2 > width2 - 40 ? 1 : 0;
-        if (delta2 && (x2 > -3 && x2 < width2 + 3)){
-            return;
-        } 
         if (e2.deltaX){
              this.hasDragged = true;
         }
