@@ -45,6 +45,7 @@ function hideWidget(node, widget, suffix = "") {
 }
 
 function showWidget(widget) {
+    if (!widget.type.startsWith(CONVERTED_TYPE)) return;
     widget.type = widget.origType;
     widget.computeSize = widget.origComputeSize;
     widget.serializeValue = widget.origSerializeValue;
@@ -68,7 +69,7 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
             let w = node.widgets[j];
             for(let k=0; k<WIDGET_SUFFIXES.length; k++) {
                 if(w.name == inp.name+WIDGET_SUFFIXES[k]) {
-                    if(w.type != CONVERTED_TYPE) {
+                    if(!w.type.startsWith(CONVERTED_TYPE)) {
                         real_widgets++;
                     }
                     found_widgets.push(w);
@@ -85,7 +86,7 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
 
     let inputless_widgets = [];
     for(let i=0; i<node.widgets.length; i++) {
-        if(node.widgets[i].type == CONVERTED_TYPE) {
+        if(!node.widgets[i].type.startsWith(CONVERTED_TYPE)) {
             continue;
         }
         let found=false;
@@ -136,9 +137,9 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
 
         if(ordered[i][0].link != undefined && ordered[i][2] > 0) { // Must hide widgets
             let real_wids = [];
-            for(let j=0;j<ordered[i][1].length;j++) {
+            for(let j=0; j<ordered[i][1].length; j++) {
                 let w = ordered[i][1][j];
-                if(w.type != CONVERTED_TYPE) {
+                if(!w.type.startsWith(CONVERTED_TYPE)) {
                     real_wids.push(w);
                 }
             }
@@ -182,7 +183,7 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
 
             let wids=ordered[i][1];
             for(let j=0; j<wids.length; j++) {
-                if(wids[j].type == CONVERTED_TYPE) {
+                if(!wids[j].type.startsWith(CONVERTED_TYPE)) {
                     continue;
                 }
                 wids[j].force_y = currentHeight;
@@ -218,7 +219,7 @@ function recalculateHeight(node) {
     let totalHeight = 2;
     for(let i=0; i<node.widgets.length; i++) {
         let size = 24;
-        size *= node.widgets[i].type != CONVERTED_TYPE
+        size *= !node.widgets[i].type.startsWith(CONVERTED_TYPE);
         totalHeight += size;
     } 
     for(let i=0; i<node.inputs.length; i++) {
@@ -276,15 +277,21 @@ function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = ()
     if (wi == -1) {
         w = obj.addWidget(type, name, def, callback, properties, {min: min, max: max, step: step});
         w.label = label;
-        wi = obj.widgets.findIndex((w) => w.name == name);
+        wi = obj.widgets.findIndex((ww) => ww.name == name);
     }else{
         w = obj.widgets[wi];
-        showWidget(w);
-        w.type = type;
-        w.label = label;
+        if (w.type.startsWith(CONVERTED_TYPE)){
+            showWidget(w);
+        }else{
+            w.type = type;
+        }
+        if (label != undefined){
+            w.label = label;
+        }
     }
+    obj.widgets[wi] = convertWidget(w);
 
-    obj.widgets[wi] = convertWidget(obj.widgets[wi]);
+    return obj.widgets[wi];
 }
 
 function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false) {
@@ -526,23 +533,23 @@ function register_mix(nodeType, nodeData) {
                     wbr.label = "B";
                     
                     if(ia.origVisibleWidgets) {
-                        ia.origVisibleWidgets = [war]
+                        ia.origVisibleWidgets = [war];
                     }
                     if(ib.origVisibleWidgets) {
-                        ib.origVisibleWidgets = [wbr]
+                        ib.origVisibleWidgets = [wbr];
                     }
                 }else{
                     if(ia.link) {
-                        ia.origVisibleWidgets = [war, wag, wab]
+                        ia.origVisibleWidgets = [war, wag, wab];
                     }else{
-                        __ADD_WIDGET(this, "FLOAT", "AG");
-                        __ADD_WIDGET(this, "FLOAT", "AB");
+                        wag = __ADD_WIDGET(this, "FLOAT", "AG");
+                        wab = __ADD_WIDGET(this, "FLOAT", "AB");
                     }
                     if(ib.link) {
-                        ib.origVisibleWidgets = [wbr, wbg, wbb]
+                        ib.origVisibleWidgets = [wbr, wbg, wbb];
                     }else{
-                        __ADD_WIDGET(this, "FLOAT", "BG");
-                        __ADD_WIDGET(this, "FLOAT", "BB");
+                        wbg = __ADD_WIDGET(this, "FLOAT", "BG");
+                        wbb = __ADD_WIDGET(this, "FLOAT", "BB");
                     }
 
                     if(widgetval == "Vector") {
@@ -570,7 +577,8 @@ function register_mix(nodeType, nodeData) {
                 
                 this.graph.setDirtyCanvas(true);
                 rearrange_inputs_and_widgets(this);
-                relabel_widgets(this);
+                console.log(this);
+                this.graph.setDirtyCanvas(true);
             }
         
         w_dtype.callback(w_dtype.value);
