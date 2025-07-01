@@ -5,6 +5,7 @@ from .cl_wrapper import transform
 from math import floor, ceil
 
 DEFAULT_CANVAS = (64, 64)
+DEBUG = False
 
 def maybe_convert_to_list(thing):
     if type(thing) in [int, float]:
@@ -83,7 +84,10 @@ class BlenderData:
                 raise Exception(f"Paramname of non-string type: {type(paramname)} {paramname}")
             param = any.get(paramname)
             if type(param) is torch.Tensor:
-                self.image = color_transform(any[paramname])
+                if len(param.size()) == 4:
+                    self.image = color_transform(param)
+                else:
+                    self.image = param.unsqueeze(-1)
                 self.canvas = (self.image.size()[1], self.image.size()[2])
             elif type(param) is BlenderData:
                 other = any[paramname]
@@ -123,11 +127,36 @@ class BlenderData:
         
         else:
             raise Exception(f"Can not convert {type(any)} to Blender data: {any}")
+        
+        if DEBUG:
+            print(f"blender data init, paramname ", end="")
+            if type(paramname) is torch.Tensor:
+                print(f"tensor {paramname.size()}", end="")
+            else:
+                print(paramname, end="")
+            print(" with:")
+
+            if type(any) == dict:
+                s = ""
+                for k in any.keys():
+                    v = any[k]
+                    if type(v) is torch.Tensor:
+                        s += f"\"{k}\": Tensor {v.size()}, "
+                    else:
+                        s += f"\"{k}\": {v}, "
+                print(s)
+            else:
+                if type(any) is torch.Tensor:
+                    print(f"tensor {any.size()}")
+                else:
+                    print(any)
+            print(colortransform_if_converting, colortransform_force, widget_override, default_notfound)
+            print(self)
 
     def __str__(self):
         if self.image is None:
             return f"Primitive {self.value}, canvas {self.canvas}"
-        return f"Tensor {self.image}, canvas {self.canvas}"
+        return f"Tensor {self.image.size()}, canvas {self.canvas}"
 
     def set_canvas(self, canvas: tuple[int, int], scale=True, off=(0, 0)):
         if self.image != None and self.image.size()[1:-1] != canvas:
