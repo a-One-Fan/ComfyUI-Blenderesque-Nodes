@@ -43,6 +43,16 @@ NODE_CLASS_MAPPINGS = {
     "BlenderLensDistortion": BlenderLensDistortion,
     #"BlenderMovieDistortion": BlenderMovieDistortion,
 
+    "BlenderBrickTexture": BlenderBrickTexture,
+    #"BlenderCheckerTexture": BlenderCheckerTexture,
+    #"BlenderGaborTexture": BlenderGaborTexture,
+    #"BlenderGradientTexture": BlenderGradientTexture,
+    #"BlenderMagicTexture": BlenderMagicTexture,
+    #"BlenderNoiseTexture": BlenderNoiseTexture,
+    #"BlenderVoronoiTexture": BlenderVoronoiTexture,
+    #"BlenderWaveTexture": BlenderWaveTexture,
+    #"BlenderWhiteNoiseTexture": BlenderWhiteNoiseTexture,
+
     "BlenderUV": BlenderUV,
 }
 
@@ -85,6 +95,16 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BlenderMapUV": "Map UV",
     "BlenderLensDistortion": "Lens Distortion",
     #"BlenderMovieDistortion": "Movie Distortion",
+
+    "BlenderBrickTexture": "Brick Texture",
+    #"BlenderCheckerTexture": "Checker Texture",
+    #"BlenderGaborTexture": "Gabor Texture",
+    #"BlenderGradientTexture": "Gradient Texture",
+    #"BlenderMagicTexture": "Magic Texture",
+    #"BlenderNoiseTexture": "Noise Texture",
+    #"BlenderVoronoiTexture": "Voronoi Texture",
+    #"BlenderWaveTexture": "Wave Texture",
+    #"BlenderWhiteNoiseTexture": "White Noise Texture",
 
     "BlenderUV": "UV",
 }

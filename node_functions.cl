@@ -11,6 +11,17 @@ float4 lerp4(float4 a, float4 b, float fac) {
     return a*(1.0f-fac) + b*fac;
 }
 
+float4 getf4(__global const float* arr, int i){
+    return (float4)(arr[i*4+0], arr[i*4+1], arr[i*4+2], arr[i*4+3]);
+}
+
+float3 getf3(__global const float* arr, int i){
+    return (float3)(arr[i*3+0], arr[i*3+1], arr[i*3+2]);
+}
+
+float2 getf2(__global const float* arr, int i){
+    return (float2)(arr[i*2+0], arr[i*2+1]);
+}
 
 // UV:  (0.0,   0.0) ----- (0.999,   0.0)
 //             |                  |
@@ -147,14 +158,24 @@ __kernel void transform(__global const float *in_img, const int inx, const int i
     res_floats[off+3] = pix.w;
 }
 
-// TODO: I think a slight repeating pattern is visible
+// TODO: Might be good but not sure, stare
 float hash_to_float(int x, int y, int seed) {
     x ^= seed;
     x += x << 10;
+    y -= x;
     x ^= x >> 6;
     x += x << 3;
+    y += x;
     x ^= x >> 11;
     x += x << 15;
+    y -= x;
+
+    y += seed;
+    y ^= y << 8;
+    y += y >> 4;
+	y ^= y << 13;
+	y += y >> 7;
+	y ^= y << 17;
     x ^= y;
     const float mapmax = pown(2.0f, 24);
     return fmod(maprange(x / 128, -mapmax, mapmax, 0.0f, 1.0f), 1.0f);
@@ -362,4 +383,64 @@ __kernel void map_uv(__global const float* tex, const int texx, const int texy,
     out[gid*4+1] = col.y;
     out[gid*4+2] = col.z;
     out[gid*4+3] = col.w * uvw_converted.z;
+}
+
+__kernel void brick_texture(__global const float* uv_in, const int uvwx, const int uvwy,
+                            __global const float* color1_in, __global const float* color2_in,
+                            __global const float* mortar_in, __global const float* sssbwh,
+                            const float offset, const int frequency_offset, const float squash, const int frequency_squash,
+                            __global float* out) {
+    int gid = get_global_id(0);
+
+    float2 uv_converted = getf2(uv_in, gid);
+    uv_converted.y = 1.0f - uv_converted.y;
+
+    float4 color1 = getf4(color1_in, gid);
+    float4 color2 = getf4(color2_in, gid);
+    float4 mortar = getf4(mortar_in, gid);
+    float scale = sssbwh[gid*6+0];
+    float mortar_size = sssbwh[gid*6+1];
+    float mortar_smooth = sssbwh[gid*6+2];
+    float bias = sssbwh[gid*6+3];
+    float width = sssbwh[gid*6+4];
+    float height = sssbwh[gid*6+5];
+
+
+    float2 uv = (float2)(uv_converted.x, uv_converted.y);
+    uv *= scale;
+
+    float topd = fmod(uv.y, height);
+    int topi = trunc(uv.y / height);
+
+    float squash_factor = (topi % frequency_squash) != 0 ? 1.0f : squash;
+    width *= squash_factor;
+
+    float offset_factor = (topi % frequency_offset) != 0 ? 0.0f : offset;
+    offset_factor *= width;
+    uv.x += offset_factor;
+    float sided = fmod(uv.x, width);
+    int sidei = trunc(uv.x / width);
+
+    float vert_dist = fabs(height - topd);
+    float hor_dist = fabs(width - sided);
+    float dist1 = min(vert_dist, hor_dist);
+    float dist2 = min(topd, sided);
+    float dist = min(dist1, dist2);
+    //dist = clamp(dist, 0.0f, mortar_size);
+
+    float mortar_fac = maprange(dist, (1.0f-mortar_smooth) * mortar_size, mortar_size, 1.0f, 0.0f);
+    mortar_fac = clamp(mortar_fac, 0.0f, 1.0f);
+    float color_fac = hash_to_float(topi, sidei, 42);
+    //color_fac = maprange(color_fac+bias, -1.0, bias, 0.0f, 1.0f);
+    color_fac = clamp(color_fac+bias, 0.0f, 1.0f);
+
+    float4 res_color;
+    res_color = lerp4(color1, color2, color_fac);
+    res_color = lerp4(res_color, mortar, mortar_fac);
+
+    out[gid*5+0] = res_color.x;
+    out[gid*5+1] = res_color.y;
+    out[gid*5+2] = res_color.z;
+    out[gid*5+3] = res_color.w;
+    out[gid*5+4] = mortar_fac;
 }

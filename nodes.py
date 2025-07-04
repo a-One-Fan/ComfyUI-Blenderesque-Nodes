@@ -1309,3 +1309,77 @@ class BlenderMapUV:
         b_col = BlenderData(res)
         
         return (b_col, b_col.as_out(), )
+    
+class BlenderBrickTexture:
+    def __init__(self):
+        pass
+
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Offset": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0}),
+                "Frequency (Offs.)": ("INT", {"default": 2, "min": 1, "max": 99}),
+                "Squash": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 99.0}),
+                "Frequency (Sq.)": ("INT", {"default": 2, "min": 1, "max": 99}),
+                **VECTOR_INPUT("Vector", hidden_default=True),
+                **COLOR_INPUT("Color1", 0.8),
+                **COLOR_INPUT("Color2", 0.2),
+                **COLOR_INPUT("Mortar", 0.0),
+                **FLOAT_INPUT("Scale", 5.0, -1000, 1000),
+                **FLOAT_INPUT("Mortar Size", 0.02, 0.0, 0.125),
+                **FLOAT_INPUT("Mortar Smooth", 0.1, 0.0, 1.0),
+                **FLOAT_INPUT("Bias", 0.0, -1.0, 1.0),
+                **FLOAT_INPUT("Brick Width", 0.5, 0.01, 100.0),
+                **FLOAT_INPUT("Row Height", 0.25, 0.01, 100.0),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
+    RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
+    FUNCTION = "brick"
+    CATEGORY = "Blender/Transform"
+    
+    def brick(self, **kwargs):
+        offset = kwargs["Offset"]
+        frequency_offset = kwargs["Frequency (Offs.)"]
+        squash = kwargs["Squash"]
+        frequency_squash = kwargs["Frequency (Sq.)"]
+
+        uv_b = BlenderData(kwargs, "Vector")
+        col1_b = BlenderData(kwargs, "Color1")
+        col2_b = BlenderData(kwargs, "Color2")
+        mort_b = BlenderData(kwargs, "Mortar")
+        scale_b = BlenderData(kwargs, "Scale")
+        mort_size_b = BlenderData(kwargs, "Mortar Size")
+        mort_smooth_b = BlenderData(kwargs, "Mortar Smooth")
+        bias_b = BlenderData(kwargs, "Bias")
+        brick_width_b = BlenderData(kwargs, "Brick Width")
+        row_height_b = BlenderData(kwargs, "Row Height")
+
+        guess_canvas(uv_b, col1_b, col2_b, mort_b, scale_b, mort_size_b, mort_smooth_b, bias_b, brick_width_b, row_height_b)
+
+        uv = uv_b.as_vector(channels=2)
+        color1 = col1_b.as_rgba()
+        color2 = col2_b.as_rgba()
+        mortar = mort_b.as_rgba()
+
+        scale = scale_b.as_float()
+        mort_size = mort_size_b.as_float()
+        mort_smooth = mort_smooth_b.as_float()
+        bias = bias_b.as_float()
+        brick_width = brick_width_b.as_float()
+        row_height = row_height_b.as_float()
+        sssbwh = torch.cat((scale, mort_size, mort_smooth, bias, brick_width, row_height), -1)
+
+        res_col, res_fac = brick_texture(offset, frequency_offset, squash, frequency_squash, uv, color1, color2, mortar, sssbwh)
+
+        res_col = BlenderData(res_col)
+        res_fac = BlenderData(res_fac)
+
+        return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )

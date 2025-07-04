@@ -513,6 +513,11 @@ def BLENDER_OUTPUT(single=False):
         return (("BLENDER", ))
     return ("BLENDER", "IMAGE", )
 
+def BLENDER_OUTPUT_WITHFAC(single=False):
+    if single:
+        return ("BLENDER", "BLENDER", )
+    return ("BLENDER", "BLENDER", "IMAGE", "IMAGE", )
+
 def BLEND_VALID_INPUTS(input_types, ref):
     #input_types is a dict of {"Name": "TYPE_NAME"}
     return True

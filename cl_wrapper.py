@@ -34,12 +34,12 @@ def te_to_np_buf(te: torch.Tensor):
         te = te[0]
     return te.contiguous().ravel().numpy()
 
-def np_buf_to_te(buf, size):
+def np_buf_to_te(buf, size, channels=4):
     """
     Size: Height x Width\n
     [Channels * Width * Height] -> [H] x [W] x [Channels]
     """
-    res = torch.from_numpy(buf).to(dtype=torch.float32).reshape((size[0], size[1], 4))
+    res = torch.from_numpy(buf).to(dtype=torch.float32).reshape((size[0], size[1], channels))
     return res
 
 def __transform_4chan(
@@ -202,3 +202,60 @@ def map_uvw(
         results.append(np_buf_to_te(res_np_floats, (uvw.size()[1], uvw.size()[2])))
 
     return torch.stack(results, dim=0)
+
+def brick_texture(
+    offset: float,
+    frequency_offset: int,
+    squash: float,
+    frequency_squash: int,
+    uv: torch.FloatTensor,
+    color1: torch.FloatTensor,
+    color2: torch.FloatTensor,
+    mortar: torch.FloatTensor,
+    sssbwh: torch.FloatTensor,
+):
+    """
+    UV is Batch x Height x Width x 2 \n
+    color1, color2, mortar are Batch x Height x Width x 4\n
+    sssbwh are Batch x Height x Width x 6, consisting of\n
+    scale, mortar size, mortar smooth, bias, width and height\n
+    \n
+    Returns color and factor
+    """
+    ctx = global_ish_context
+    mf = cl.mem_flags
+
+    results_col = []
+    results_fac = []
+
+    assert uv.size()[3] == 2, f"UV is not 2-dimensional, is a {uv.size()} tensor instead"
+    assert sssbwh.size()[3] == 6, f"SSSBWH is not 6-dimensional, is a {sssbwh.size()} tensor instead"
+
+    for b in range(uv.size()[0]):
+        uvw_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uv[b]))
+        color1_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(color1[b]))
+        color2_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(color2[b]))
+        mortar_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(mortar[b]))
+        sssbwh_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(sssbwh[b]))
+        
+        pixels = uv.size()[2] * uv.size()[1]
+        res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 5 * np.dtype(np.float32).itemsize)
+        res_np_floats = np.empty(pixels * 5, dtype=np.float32)
+
+        cl_bricktex = ctx.prog.brick_texture
+        cl_bricktex( ctx.queue, (pixels,), None, 
+            uvw_buf, np.int32(uv.size()[2]), np.int32(uv.size()[1]), 
+            color1_buf, color2_buf, 
+            mortar_buf, sssbwh_buf,
+            np.float32(offset), np.int32(frequency_offset), np.float32(squash), np.int32(frequency_squash),
+            res_cl_floats)
+
+        cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
+
+        res_te = np_buf_to_te(res_np_floats, (uv.size()[1], uv.size()[2]), 5)
+        res_col, res_fac = res_te.split((4, 1), -1)
+
+        results_col.append(res_col)
+        results_fac.append(res_fac)
+
+    return (torch.stack(results_col, dim=0), torch.stack(results_fac, dim=0))
