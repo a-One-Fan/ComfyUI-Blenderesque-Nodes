@@ -23,6 +23,8 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<li>Added colored outputs to most nodes</li>
+<br><br>
 <li>Fixed incorrect number widgets being dragged sometimes</li>
 <li>Added Brick texture</li>
 </ul>

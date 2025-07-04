@@ -10,6 +10,9 @@ import {
     COLOR_FLOAT_CONNECTED, COLOR_FLOAT_DISCONNECTED, COLOR_RGB_CONNECTED, COLOR_RGB_DISCONNECTED,
     COLOR_VEC_CONNECTED, COLOR_VEC_DISCONNECTED, COLOR_BOOL_CONNECTED, COLOR_BOOL_DISCONNECTED,
     COLOR_IMAGE_CONNECTED, COLOR_IMAGE_DISCONNECTED, COLOR_DISABLED,
+    COLOR_OUTPUT_GENERIC_DISCONNECTED, COLOR_OUTPUT_GENERIC_CONNECTED,
+
+    BLENDER_OUTPUT_TYPE, BLENDER_COLOR_MAP,
 
     MATH_NAMEMAP,
 
@@ -354,6 +357,31 @@ function relabel_widgets(node) {
     }
 }
 
+function get_color_by_type(type) {
+    if (!type.startsWith(BLENDER_OUTPUT_TYPE)){
+        return false;
+    }
+    const type_rest = type.substr(BLENDER_OUTPUT_TYPE.length+1);
+    const cols = BLENDER_COLOR_MAP[type_rest];
+
+    if (cols){
+        return cols;
+    }
+
+    return [COLOR_OUTPUT_GENERIC_CONNECTED, COLOR_OUTPUT_GENERIC_DISCONNECTED];
+}
+
+function recolor_outputs(node) {
+    for(let i=0; i<node.outputs.length; i++){
+        const o = node.outputs[i];
+        const cols = get_color_by_type(o.type);
+        if (cols){
+            o.color_on = cols[0];
+            o.color_off = cols[1];
+        }
+    }
+}
+
 function find_blender_node(name) {
     for(let i=0; i<NODES_ALL.length; i++) {
         for(let j=0; j<NODES_ALL[i].nodes.length; j++) {
@@ -646,6 +674,7 @@ app.registerExtension({
                 convert_widgets(this);
                 relabel_widgets(this);
                 rearrange_inputs_and_widgets(this);
+                recolor_outputs(this);
 
                 const onConnectionsChangePrev = this.onConnectionsChange;
                 this.onConnectionsChange = async function (eventtype, slotid, is_connect, link_info, input) {

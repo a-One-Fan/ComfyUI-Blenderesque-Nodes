@@ -21,7 +21,7 @@ class BlenderValue:
             },
         }
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), "FLOAT", "INT")
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), "FLOAT", "INT")
     FUNCTION = "get_value"
     CATEGORY = "Blender/Input" 
     
@@ -46,7 +46,7 @@ class BlenderRGB:
             # TODO: Can dynamic optional inputs be done based on Channels selected?
         }
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(),)
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(),)
     RETURN_NAMES = ("Color", "Image")
     FUNCTION = "get_rgb"
     CATEGORY = "Blender/Input" 
@@ -86,7 +86,7 @@ class BlenderBrightnessContrast:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(),)
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(),)
     RETURN_NAMES = ("Color", "Image")
     FUNCTION = "brightness_contrast"
     CATEGORY = "Blender/Color" 
@@ -125,7 +125,7 @@ class BlenderGamma:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(),)
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(),)
     RETURN_NAMES = ("Color", "Image")
     FUNCTION = "gamma"
     CATEGORY = "Blender/Color"
@@ -159,7 +159,7 @@ class BlenderInvertColor:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Color", "Image")
     FUNCTION = "invert"
     CATEGORY = "Blender/Color"
@@ -195,7 +195,7 @@ class BlenderSeparateColor:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(),)
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(),)
     RETURN_NAMES = ("R", "R", "G", "G", "B", "B", "A", "A")
     FUNCTION = "separate_color"
     CATEGORY = "Blender/Converter"
@@ -323,7 +323,7 @@ class BlenderBlackbody:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Color", "Image")
     FUNCTION = "blackbody"
     CATEGORY = "Blender/Converter"
@@ -355,7 +355,7 @@ class BlenderWavelength:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Color", "Image")
     FUNCTION = "wavelength"
     CATEGORY = "Blender/Converter"
@@ -387,7 +387,7 @@ class BlenderRGBtoBW:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
     RETURN_NAMES = ("Val", "Image")
     FUNCTION = "rgb_to_bw"
     CATEGORY = "Blender/Converter"
@@ -415,7 +415,7 @@ class BlenderSeparateXYZ:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), *BLENDER_OUTPUT(), *BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), )
     RETURN_NAMES = ("X", "X", "Y", "Y", "Z", "Z")
     FUNCTION = "separate_xyz"
     CATEGORY = "Blender/Converter"
@@ -447,7 +447,7 @@ class BlenderCombineXYZ:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_VECTOR(), )
     RETURN_NAMES = ("Vector", "Image")
     FUNCTION = "combine_xyz"
     CATEGORY = "Blender/Converter"
@@ -482,7 +482,7 @@ class BlenderClamp:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
     RETURN_NAMES = ("Result", "Result")
     FUNCTION = "clamp"
     CATEGORY = "Blender/Converter"
@@ -528,7 +528,7 @@ class BlenderHueSaturationValue:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Result", "Result")
     FUNCTION = "do_hsv"
     CATEGORY = "Blender/Color"
@@ -580,7 +580,7 @@ class BlenderCombineColor:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Color", "Image", )
     FUNCTION = "combine_color"
     CATEGORY = "Blender/Converter"
@@ -633,7 +633,7 @@ class BlenderSetAlpha:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Result", "Result")
     FUNCTION = "set_alpha"
     CATEGORY = "Blender/Color"
@@ -672,7 +672,7 @@ class BlenderRotate:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "rotate"
     CATEGORY = "Blender/Transform"
@@ -720,7 +720,7 @@ class BlenderScale:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "scale"
     CATEGORY = "Blender/Transform"
@@ -769,7 +769,7 @@ class BlenderTranslate:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "translate"
     CATEGORY = "Blender/Transform"
@@ -819,7 +819,7 @@ class BlenderTransform:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "transform"
     CATEGORY = "Blender/Transform"
@@ -876,7 +876,7 @@ class BlenderMix:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "mix"
     CATEGORY = "Blender/Converter"
@@ -1013,7 +1013,7 @@ class BlenderMath:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "math"
     CATEGORY = "Blender/Converter"
@@ -1152,7 +1152,7 @@ class BlenderLensDistortion:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "lensdistort"
     CATEGORY = "Blender/Transform"
@@ -1194,7 +1194,7 @@ class BlenderUV:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_VECTOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "uv"
     CATEGORY = "Blender/Input"
@@ -1235,7 +1235,7 @@ class BlenderCrop:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "crop"
     CATEGORY = "Blender/Transform"
@@ -1287,7 +1287,7 @@ class BlenderMapUV:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
     RETURN_NAMES = ("Image", "Image", )
     FUNCTION = "mapuv"
     CATEGORY = "Blender/Transform"

@@ -515,10 +515,25 @@ def BLENDER_OUTPUT(single=False):
         return (("BLENDER", ))
     return ("BLENDER", "IMAGE", )
 
+def BLENDER_OUTPUT_FLOAT(single=False):
+    if single:
+        return (("BLENDER_FLOAT", ))
+    return ("BLENDER_FLOAT", "IMAGE", )
+
+def BLENDER_OUTPUT_COLOR(single=False):
+    if single:
+        return (("BLENDER_RGB", ))
+    return ("BLENDER_RGB", "IMAGE", )
+
+def BLENDER_OUTPUT_VECTOR(single=False):
+    if single:
+        return (("BLENDER_VEC", ))
+    return ("BLENDER_VEC", "IMAGE", )
+
 def BLENDER_OUTPUT_WITHFAC(single=False):
     if single:
-        return ("BLENDER", "BLENDER", )
-    return ("BLENDER", "BLENDER", "IMAGE", "IMAGE", )
+        return ("BLENDER_RGB", "BLENDER_FLOAT", )
+    return ("BLENDER_RGB", "BLENDER_FLOAT", "IMAGE", "IMAGE", )
 
 def BLEND_VALID_INPUTS(input_types, ref):
     #input_types is a dict of {"Name": "TYPE_NAME"}
