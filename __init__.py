@@ -44,7 +44,7 @@ NODE_CLASS_MAPPINGS = {
     #"BlenderMovieDistortion": BlenderMovieDistortion,
 
     "BlenderBrickTexture": BlenderBrickTexture,
-    #"BlenderCheckerTexture": BlenderCheckerTexture,
+    "BlenderCheckerTexture": BlenderCheckerTexture,
     #"BlenderGaborTexture": BlenderGaborTexture,
     #"BlenderGradientTexture": BlenderGradientTexture,
     #"BlenderMagicTexture": BlenderMagicTexture,
@@ -97,7 +97,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     #"BlenderMovieDistortion": "Movie Distortion",
 
     "BlenderBrickTexture": "Brick Texture",
-    #"BlenderCheckerTexture": "Checker Texture",
+    "BlenderCheckerTexture": "Checker Texture",
     #"BlenderGaborTexture": "Gabor Texture",
     #"BlenderGradientTexture": "Gradient Texture",
     #"BlenderMagicTexture": "Magic Texture",

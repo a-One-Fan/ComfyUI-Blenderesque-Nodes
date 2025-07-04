@@ -1383,3 +1383,48 @@ class BlenderBrickTexture:
         res_fac = BlenderData(res_fac)
 
         return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )
+    
+class BlenderCheckerTexture:
+    def __init__(self):
+        pass
+
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **VECTOR_INPUT("Vector", hidden_default=True),
+                **COLOR_INPUT("Color1", 0.8),
+                **COLOR_INPUT("Color2", 0.2),
+                **FLOAT_INPUT("Scale", 5.0, -1000, 1000),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
+    RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
+    FUNCTION = "checker"
+    CATEGORY = "Blender/Transform"
+    
+    def checker(self, **kwargs):
+        uvw_b = BlenderData(kwargs, "Vector")
+        col1_b = BlenderData(kwargs, "Color1")
+        col2_b = BlenderData(kwargs, "Color2")
+        scale_b = BlenderData(kwargs, "Scale")
+
+        guess_canvas(uvw_b, col1_b, col2_b, scale_b)
+
+        uvw = uvw_b.as_vector(channels=3)
+        color1 = col1_b.as_rgba()
+        color2 = col2_b.as_rgba()
+        scale = scale_b.as_float()
+
+        res_col, res_fac = checker_texture(uvw, color1, color2, scale)
+
+        res_col = BlenderData(res_col)
+        res_fac = BlenderData(res_fac)
+
+        return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )

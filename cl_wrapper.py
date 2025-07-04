@@ -259,3 +259,50 @@ def brick_texture(
         results_fac.append(res_fac)
 
     return (torch.stack(results_col, dim=0), torch.stack(results_fac, dim=0))
+
+def checker_texture(
+    uvw: torch.FloatTensor,
+    color1: torch.FloatTensor,
+    color2: torch.FloatTensor,
+    scale: torch.FloatTensor,
+):
+    """
+    UVW is Batch x Height x Width x 3 \n
+    color1, color2, are Batch x Height x Width x 4\n
+    scale is Batch x Height x Width x 1\n
+    Returns color and factor
+    """
+    ctx = global_ish_context
+    mf = cl.mem_flags
+
+    results_col = []
+    results_fac = []
+
+    assert uvw.size()[3] == 3, f"UVW is not 3-dimensional, is a {uvw.size()} tensor instead"
+    assert scale.size()[3] == 1, f"Scale is not 1-dimensional, is a {scale.size()} tensor instead"
+
+    for b in range(uvw.size()[0]):
+        uvw_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uvw[b]))
+        color1_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(color1[b]))
+        color2_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(color2[b]))
+        scale_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(scale[b]))
+        
+        pixels = uvw.size()[2] * uvw.size()[1]
+        res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 5 * np.dtype(np.float32).itemsize)
+        res_np_floats = np.empty(pixels * 5, dtype=np.float32)
+
+        cl_checkertex = ctx.prog.checker_texture
+        cl_checkertex( ctx.queue, (pixels,), None, 
+            uvw_buf, np.int32(uvw.size()[2]), np.int32(uvw.size()[1]), 
+            color1_buf, color2_buf, scale_buf,
+            res_cl_floats)
+
+        cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
+
+        res_te = np_buf_to_te(res_np_floats, (uvw.size()[1], uvw.size()[2]), 5)
+        res_col, res_fac = res_te.split((4, 1), -1)
+
+        results_col.append(res_col)
+        results_fac.append(res_fac)
+
+    return (torch.stack(results_col, dim=0), torch.stack(results_fac, dim=0))

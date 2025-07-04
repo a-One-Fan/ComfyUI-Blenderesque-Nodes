@@ -1,3 +1,5 @@
+#define EPS 0.0000001f
+
 float maprange(float val, float oldmin, float oldmax, float newmin, float newmax) {
     float fac = (val - oldmin) / (oldmax - oldmin);
     return newmin + fac*(newmax - newmin);
@@ -369,13 +371,22 @@ __kernel void execute_screen_distortion( __global const float* tex, const int si
     out[gid*4+3] = pix.w;
 }
 
+float3 convert_uvw(float3 uvw){
+    uvw.y = 1.0f - uvw.y - EPS;
+    return uvw;
+}
+float2 convert_uv(float2 uv){
+    uv.y = 1.0f - uv.y - EPS;
+    return uv;
+}
+
 __kernel void map_uv(__global const float* tex, const int texx, const int texy,
                      __global const float* uvw,  const int uvx,  const int uvy,
                      const int interp, const int extend, __global float* out) {
     int gid = get_global_id(0);
 
     float3 uvw_converted = (float3)(uvw[gid*3], uvw[gid*3+1], uvw[gid*3+2]);
-    uvw_converted.y = 1.0f - uvw_converted.y; // Blender UV is flipped on Y compared to this
+    uvw_converted = convert_uvw(uvw_converted); // Blender UV is flipped on Y compared to this
 
     float4 col = sample(tex, uvw_converted.x, uvw_converted.y, texx, texy, interp, extend);
 
@@ -393,7 +404,7 @@ __kernel void brick_texture(__global const float* uv_in, const int uvwx, const i
     int gid = get_global_id(0);
 
     float2 uv_converted = getf2(uv_in, gid);
-    uv_converted.y = 1.0f - uv_converted.y;
+    uv_converted = convert_uv(uv_converted);
 
     float4 color1 = getf4(color1_in, gid);
     float4 color2 = getf4(color2_in, gid);
@@ -443,4 +454,35 @@ __kernel void brick_texture(__global const float* uv_in, const int uvwx, const i
     out[gid*5+2] = res_color.z;
     out[gid*5+3] = res_color.w;
     out[gid*5+4] = mortar_fac;
+}
+
+__kernel void checker_texture(__global const float* uvw_in, const int uvwx, const int uvwy,
+                            __global const float* color1_in, __global const float* color2_in, __global const float* scale_in,
+                            __global float* out) {
+    int gid = get_global_id(0);
+
+    float3 uvw_converted = getf3(uvw_in, gid);
+    uvw_converted = convert_uvw(uvw_converted);
+
+    float4 color1 = getf4(color1_in, gid);
+    float4 color2 = getf4(color2_in, gid);
+    float scale = scale_in[gid];
+
+    uvw_converted *= scale;
+
+    int color_fac;
+    color_fac += floor(repeatmod(uvw_converted.x, 2.0f));
+    color_fac += floor(repeatmod(uvw_converted.y, 2.0f));
+    color_fac += floor(repeatmod(uvw_converted.z, 2.0f));
+    color_fac = color_fac % 2;
+    color_fac = 1 - color_fac; // Mimic Blender behavior, where the factor is swapped
+
+    float4 res_color;
+    res_color = color_fac ? color1 : color2;
+
+    out[gid*5+0] = res_color.x;
+    out[gid*5+1] = res_color.y;
+    out[gid*5+2] = res_color.z;
+    out[gid*5+3] = res_color.w;
+    out[gid*5+4] = color_fac;
 }
