@@ -137,9 +137,9 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Texture 0/9</summary>
+<summary>Texture 1/9</summary>
 <ul>
-<li><span style="color:IndianRed"> Brick Texture ❌</span></li>
+<li><span style="color:LightGreen"> Brick Texture ✅</span></li>
 <li><span style="color:IndianRed"> Checker Texture ❌</span></li>
 <li><span style="color:IndianRed"> Gabor Texture ❌</span></li>
 <li><span style="color:IndianRed"> Gradient Texture ❌</span></li>
@@ -167,4 +167,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 26/59
+Implemented nodes: 27/59
