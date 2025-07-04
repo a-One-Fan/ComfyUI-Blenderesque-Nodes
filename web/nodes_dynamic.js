@@ -164,6 +164,7 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
     for(let i=0; i<ordered.length; i++) {
         if(ordered[i][1] == SOLO_WIDGET) {
             ordered[i][0].force_y = currentHeight;
+            ordered[i][0].y = currentHeight;
         } else if (ordered[i][1] == SOLO_INPUT || ordered[i][2] == 0) {
             ordered[i][0].pos = [0, currentHeight + HEIGHT_INPUT];
             let desired_label = ordered[i][0].name;
@@ -186,6 +187,7 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                     continue;
                 }
                 wids[j].force_y = currentHeight;
+                wids[j].y = currentHeight;
                 currentHeight += HEIGHT_WIDGET;
             }
             if(ordered[i][0].color_hint){

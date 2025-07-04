@@ -25,7 +25,7 @@ class BaseWidget {
     label;
     type;
     value;
-    y = 0;
+    __y = 0;
     last_y;
     width;
     disabled;
@@ -41,6 +41,14 @@ class BaseWidget {
       this.type = widget.type;
       this.label = widget.label;
       this.backupLabel = widget.backupLabel;
+    }
+    set y(newy) {
+        //console.log("Setting y:", newy)
+        //console.trace();
+        this.__y = this.force_y || newy;
+    }
+    get y() {
+        return this.__y;
     }
     get outline_color() {
       return this.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR;
