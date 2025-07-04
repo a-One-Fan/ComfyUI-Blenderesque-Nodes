@@ -215,10 +215,12 @@ class BlenderData:
                 if len(padded) < 4:
                     padded = padded + [1.0]
             else:
-                print(f"Self value: {self.value}")
+                if DEBUG:
+                    print(f"Self value: {self.value}")
                 padded = resize_channels(self.value, 4)
-                
-            print(f"Padded: {padded}")
+            
+            if DEBUG:
+                print(f"Padded: {padded}")
             return torch.stack([torch.full(size, val) for val in padded], dim=-1)
         
         if self.image.size()[3] == 1:
