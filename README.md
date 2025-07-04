@@ -19,6 +19,16 @@ Nodes will output Blender-like data, and an image for general Comfy usage.<br>
 Differently sized images are automatically cropped/padded like Blender's compositor.
 You should prefer to use the Blender-like data output between these nodes, to reduce loss in precision from excessive colorspace transforms, or avoid very small images inteded for a simple preview, among other possible issues.<br>
 
+<details>
+<summary>Changelog</summary>
+<br>
+<ul>
+<li>Fixed incorrect number widgets being dragged sometimes</li>
+<li>Added Brick texture</li>
+</ul>
+</details>
+<br>
+
 Currently implemented nodes:<br><br>
 <span style="color:LightGreen">Something with ✅</span> = Implemented<br>
 <span style="color:IndianRed">Something with ❌</span> = Not implemented<br>
