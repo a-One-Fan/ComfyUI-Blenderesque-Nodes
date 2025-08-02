@@ -1,7 +1,13 @@
 #define EPS 0.0000001f
+#define PI 3.14159f
 
 float maprange(float val, float oldmin, float oldmax, float newmin, float newmax) {
     float fac = (val - oldmin) / (oldmax - oldmin);
+    return newmin + fac*(newmax - newmin);
+}
+
+float4 maprange4s(float4 val, float oldmin, float oldmax, float newmin, float newmax) {
+    float4 fac = (val - oldmin) / (oldmax - oldmin);
     return newmin + fac*(newmax - newmin);
 }
 
@@ -371,6 +377,11 @@ __kernel void execute_screen_distortion( __global const float* tex, const int si
     out[gid*4+3] = pix.w;
 }
 
+float4 convert_uv4(float4 uv4){
+    uv4.y = 1.0f - uv4.y - EPS;
+    return uv4;
+}
+
 float3 convert_uvw(float3 uvw){
     uvw.y = 1.0f - uvw.y - EPS;
     return uvw;
@@ -409,12 +420,12 @@ __kernel void brick_texture(__global const float* uv_in, const int uvwx, const i
     float4 color1 = getf4(color1_in, gid);
     float4 color2 = getf4(color2_in, gid);
     float4 mortar = getf4(mortar_in, gid);
-    float scale = sssbwh[gid*6+0];
-    float mortar_size = sssbwh[gid*6+1];
-    float mortar_smooth = sssbwh[gid*6+2];
-    float bias = sssbwh[gid*6+3];
-    float width = sssbwh[gid*6+4];
-    float height = sssbwh[gid*6+5];
+    float scale =           sssbwh[gid*6+0];
+    float mortar_size =     sssbwh[gid*6+1];
+    float mortar_smooth =   sssbwh[gid*6+2];
+    float bias =            sssbwh[gid*6+3];
+    float width =           sssbwh[gid*6+4];
+    float height =          sssbwh[gid*6+5];
 
 
     float2 uv = (float2)(uv_converted.x, uv_converted.y);
@@ -485,4 +496,162 @@ __kernel void checker_texture(__global const float* uvw_in, const int uvwx, cons
     out[gid*5+2] = res_color.z;
     out[gid*5+3] = res_color.w;
     out[gid*5+4] = color_fac;
+}
+
+// Permutation is between 0-15 (0000, 0001, 0010, ... 1111)
+float4 get_corner(const float4 uv4, int permutation){
+    float x = floor(uv4.x) + (float)((permutation >> 0) % 2);
+    float y = floor(uv4.y) + (float)((permutation >> 1) % 2);
+    float z = floor(uv4.z) + (float)((permutation >> 2) % 2);
+    float w = floor(uv4.w) + (float)((permutation >> 3) % 2);
+
+    return (float4)(x, y, z, w);
+}
+
+float4 fract4(const float4 v){
+    return v - floor(v);
+}
+
+float4 hash4_2(const float4 uv4, int seed){
+    float3 hs;
+    float4 res;
+    hs.x = hash_to_float((int)(uv4.x), (int)(uv4.y), seed);
+    hs.y = hash_to_float((int)(uv4.y)+8151, (int)(uv4.z)-88, seed+81923);
+    hs.z = hash_to_float((int)(uv4.z)+75182, (int)(uv4.w)+5924, seed-79341);
+    hs.x = maprange(hs.x, 0.0f, 1.0f, 0.0f, PI * 2.0f);
+    hs.y = maprange(hs.y, 0.0f, 1.0f, 0.0f, PI * 2.0f);
+    hs.z = maprange(hs.z, 0.0f, 1.0f, 0.0f, PI * 2.0f);
+        
+    res.x = cos(hs.x);
+    res.y = sin(hs.x) * cos(hs.y);
+    res.z = sin(hs.x) * sin(hs.y) * cos(hs.z);
+    res.w = sin(hs.x) * sin(hs.y) * sin(hs.z);
+    return res;
+}
+
+float4 get_gradient(int i){
+    float4 gradients[32] = {
+        (float4)(0.0f, 1.0f, 1.0f, 1.0f),
+        (float4)(0.0f, 1.0f, 1.0f, -1.0f),
+        (float4)(0.0f, 1.0f, -1.0f, 1.0f),
+        (float4)(0.0f, -1.0f, 1.0f, 1.0f),
+        (float4)(0.0f, 1.0f, -1.0f, -1.0f),
+        (float4)(0.0f, -1.0f, 1.0f, -1.0f),
+        (float4)(0.0f, -1.0f, -1.0f, 1.0f),
+        (float4)(0.0f, -1.0f, -1.0f, -1.0f),
+
+        (float4)(1.0f, 0.0f, 1.0f, 1.0f),
+        (float4)(1.0f, 0.0f, 1.0f, -1.0f),
+        (float4)(1.0f, 0.0f, -1.0f, 1.0f),
+        (float4)(-1.0f, 0.0f, 1.0f, 1.0f),
+        (float4)(1.0f, 0.0f, -1.0f, -1.0f),
+        (float4)(-1.0f, 0.0f, 1.0f, -1.0f),
+        (float4)(-1.0f, 0.0f, -1.0f, 1.0f),
+        (float4)(-1.0f, 0.0f, -1.0f, -1.0f),
+
+        (float4)(1.0f, 1.0f, 0.0f, 1.0f),
+        (float4)(1.0f, 1.0f, 0.0f, -1.0f),
+        (float4)(-1.0f, 1.0f, 0.0f, 1.0f),
+        (float4)(1.0f, -1.0f, 0.0f, 1.0f),
+        (float4)(-1.0f, 1.0f, 0.0f, -1.0f),
+        (float4)(1.0f, -1.0f, 0.0f, -1.0f),
+        (float4)(-1.0f, -1.0f, 0.0f, 1.0f),
+        (float4)(-1.0f, -1.0f, 0.0f, -1.0f),
+
+        (float4)(1.0f, 1.0f, 1.0f, 0.0f),
+        (float4)(-1.0f, 1.0f, 1.0f, 0.0f),
+        (float4)(1.0f, 1.0f, -1.0f, 0.0f),
+        (float4)(1.0f, -1.0f, 1.0f, 0.0f),
+        (float4)(-1.0f, 1.0f, -1.0f, 0.0f),
+        (float4)(-1.0f, -1.0f, 1.0f, 0.0f),
+        (float4)(1.0f, -1.0f, -1.0f, 0.0f),
+        (float4)(-1.0f, -1.0f, -1.0f, 0.0f),
+    };
+    return gradients[i%32];
+}
+
+float4 fade(float4 t) {
+    // 6t^5 - 15t^4 + 10t^3
+	return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+}
+
+float perlin(float4 uv4, int seed){
+    float4 uv4_fract = fract4(uv4);
+    float res=0.0f, dots[16];
+    float lerp1[8], lerp2[4], lerp3[2];
+
+    for(int i=0; i<16; i++){
+        float4 corner = get_corner(uv4, i);
+        float4 offset = uv4 - corner;
+
+        // Not sure which gradient implementation is better.
+        //float4 cornervec = get_gradient((int)(floor(maprange(hash_to_float((int)(corner[0]-4096.0f), (int)(corner[1]-4096.0f), seed) + hash_to_float((int)(corner[2]+4096.0f), (int)(corner[3]+4096.0f), seed), 0.0f, 2.0f, 0.0f, 31.999f))));
+        float4 cornervec=hash4_2(corner, seed);
+
+        cornervec = normalize(cornervec);
+        
+        dots[i] = dot(offset, cornervec);
+    }
+
+    uv4_fract = fade(uv4_fract);
+
+    for(int i=0; i<16; i+=2){
+        lerp1[i/2] = lerp(dots[i], dots[i+1], uv4_fract.x);
+    }
+    for(int i=0;i<16; i+=4){
+        lerp2[i/4] = lerp(lerp1[i/2], lerp1[i/2+1], uv4_fract.y);
+    }
+    lerp3[0] = lerp(lerp2[0], lerp2[1], uv4_fract.z);
+    lerp3[1] = lerp(lerp2[2], lerp2[3], uv4_fract.z);
+    res = lerp(lerp3[0], lerp3[1], uv4_fract.w);
+    
+    //res = 1.0f + res / 2.0f;
+
+    return res;
+}
+
+float4 perlin4(const float4 uv4, int seed){
+    return (float4)(perlin(uv4, seed*32+0), perlin(uv4, seed*32+1), perlin(uv4, seed*32+2), perlin(uv4, seed*32+3));
+}
+
+// Types:
+// 0 - Multifractal
+// 1 - Ridged multifractal
+// 2 - Hybrid multifractal
+// 3 - Fractal Brownian Motion (fBM)
+// 4 - Hetero Terrain
+__kernel void noise_texture(__global const float* uv4_in, const int uvx, const int uvy,
+                            __global const float* sdrlogd, const int type, const int normalize, __global float* out) {
+    int gid = get_global_id(0);
+
+    float4 uv4_converted = getf4(uv4_in, gid);
+    uv4_converted = convert_uv4(uv4_converted);
+
+    float scale =       sdrlogd[gid*7+0];
+    float detail =      sdrlogd[gid*7+1];
+    float roughness =   sdrlogd[gid*7+2];
+    float lacunarity =  sdrlogd[gid*7+3];
+    float offset =      sdrlogd[gid*7+4];
+    float gain =        sdrlogd[gid*7+5];
+    float distortion =  sdrlogd[gid*7+6];
+
+    float4 res = (float4)(0.0f);
+
+    if(type == 3){
+        float4 detail_current=perlin4(scale*uv4_converted, 0), detail_lower=detail_current;
+        for(int i=0; i<ceil(detail); i++){
+            detail_lower=detail_current;
+            scale *= lacunarity;
+            detail_current += roughness * perlin4(scale*uv4_converted, i+1);
+            roughness *= roughness;
+        }
+        res = lerp4(detail_lower, detail_current, detail-floor(detail));
+        if (normalize){
+            res = maprange4s(res, -1.0f-detail, 1.0f+detail, 0.0f, 1.0f);
+        }
+    }
+
+    out[gid*3+0] = res.x;
+    out[gid*3+1] = res.y;
+    out[gid*3+2] = res.z;
 }

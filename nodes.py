@@ -1343,7 +1343,7 @@ class BlenderBrickTexture:
     RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
     RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
     FUNCTION = "brick"
-    CATEGORY = "Blender/Transform"
+    CATEGORY = "Blender/Texture"
     
     def brick(self, **kwargs):
         offset = kwargs["Offset"]
@@ -1407,7 +1407,7 @@ class BlenderCheckerTexture:
     RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
     RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
     FUNCTION = "checker"
-    CATEGORY = "Blender/Transform"
+    CATEGORY = "Blender/Texture"
     
     def checker(self, **kwargs):
         uvw_b = BlenderData(kwargs, "Vector")
@@ -1423,6 +1423,75 @@ class BlenderCheckerTexture:
         scale = scale_b.as_float()
 
         res_col, res_fac = checker_texture(uvw, color1, color2, scale)
+
+        res_col = BlenderData(res_col)
+        res_fac = BlenderData(res_fac)
+
+        return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )
+    
+NOISE_TYPES = ["Multifractal", "Ridged Multifcractal", "Hybrid Multifractal", "fBM", "Hetero Terrain"]
+
+class BlenderNoiseTexture:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **DIMENSIONS_INPUT,
+                "Type": (NOISE_TYPES, {"default": "fBM"}),
+                "Normalize": ("BOOLEAN", {"default": True}),
+                **VECTOR_INPUT("Vector", hidden_default=True),
+                **FLOAT_INPUT("Scale", 5.0, -1000, 1000),
+                **FLOAT_INPUT("Detail", 2.0, 0.0, 15.0),
+                **FLOAT_INPUT("Roughness", 0.5, 0.0, 1.0),
+                **FLOAT_INPUT("Lacunarity", 2.0, 0.0, 1000.0),
+                **FLOAT_INPUT("Offset", 0.0, -1000.0, 1000.0),
+                **FLOAT_INPUT("Gain", 1.0, 0.0, 1000.0),
+                **FLOAT_INPUT("Distortion", 0.0, -1000.0, 1000.0),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
+    RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
+    FUNCTION = "noise"
+    CATEGORY = "Blender/Texture"
+    
+    def noise(self, **kwargs):
+        noise_type = kwargs["Type"]
+        noise_type = NOISE_TYPES.index(noise_type)
+        normalize = kwargs["Normalize"]
+        dim = get_kwargs_dim(kwargs)
+
+        b_vector = BlenderData(kwargs, "Vector")
+        b_scale = BlenderData(kwargs, "Scale")
+        b_detail = BlenderData(kwargs, "Detail")
+        b_roughness = BlenderData(kwargs, "Roughness")
+        b_lacunarity = BlenderData(kwargs, "Lacunarity")
+        b_offset = BlenderData(kwargs, "Offset", default_notfound=0.0)
+        b_gain = BlenderData(kwargs, "Gain")
+        b_distortion = BlenderData(kwargs, "Distortion")
+
+        guess_canvas(b_vector, b_scale, b_detail, b_roughness, b_lacunarity, b_offset, b_gain, b_distortion)
+
+        vector = BlenderData(b_vector.as_vector(channels=dim), colortransform_force=False).as_vector(channels=4)
+
+        scale = b_scale.as_float()
+        detail = b_detail.as_float()
+        roughness = b_roughness.as_float()
+        lacunarity = b_lacunarity.as_float()
+        offset = b_offset.as_float()
+        gain = b_gain.as_float()
+        distortion = b_distortion.as_float()
+
+        sdrlogd = torch.cat((scale, detail, roughness, lacunarity, offset, gain, distortion), dim=-1)
+
+        res_col, res_fac = noise_texture(vector, sdrlogd, noise_type, normalize)
 
         res_col = BlenderData(res_col)
         res_fac = BlenderData(res_fac)

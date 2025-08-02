@@ -306,3 +306,54 @@ def checker_texture(
         results_fac.append(res_fac)
 
     return (torch.stack(results_col, dim=0), torch.stack(results_fac, dim=0))
+
+def noise_texture(
+    uv4: torch.FloatTensor,
+    sdrlogd: torch.FloatTensor,
+    noise_type: int,
+    normalize: bool
+):
+    """
+    UV4 is Batch x Height x Width x 4 \n
+    sdrlogd is Batxh x Height x Width x 7, consisting of\n
+    scale, detail, roughness, lacunarity, offset, gain, distortion\n
+    noise_type is:\n
+    0 - Multifractal\n
+    1 - Ridged multifractal\n
+    2 - Hybrid multifractal\n
+    3 - Fractal Brownian Motion (fBM)\n
+    4 - Hetero Terrain\n
+    Returns color and factor
+    """
+    ctx = global_ish_context
+    mf = cl.mem_flags
+
+    results_col = []
+    results_fac = []
+
+    assert uv4.size()[3] == 4, f"UV4 is not 4-dimensional, is a {uv4.size()} tensor instead"
+    assert sdrlogd.size()[3] == 7, f"sdrlogd is not 7-dimensional, is a {sdrlogd.size()} tensor instead"
+
+    for b in range(uv4.size()[0]):
+        uv4_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uv4[b]))
+        srdlogd_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(sdrlogd[b]))
+        
+        pixels = uv4.size()[2] * uv4.size()[1]
+        res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 3 * np.dtype(np.float32).itemsize)
+        res_np_floats = np.empty(pixels * 3, dtype=np.float32)
+
+        cl_noisetex = ctx.prog.noise_texture
+        cl_noisetex( ctx.queue, (pixels,), None, 
+            uv4_buf, np.int32(uv4.size()[2]), np.int32(uv4.size()[1]), 
+            srdlogd_buf, np.int32(noise_type), np.int32(bool(normalize)),
+            res_cl_floats)
+
+        cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
+
+        res_te = np_buf_to_te(res_np_floats, (uv4.size()[1], uv4.size()[2]), 3)
+        res_fac, _ = res_te.split((1, 2), -1)
+
+        results_col.append(res_te)
+        results_fac.append(res_fac)
+
+    return (torch.stack(results_col, dim=0), torch.stack(results_fac, dim=0))

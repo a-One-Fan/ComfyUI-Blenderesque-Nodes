@@ -510,6 +510,13 @@ def VECTOR_INPUT(name, default: float | tuple = 0.0, min=-100000.0, max=100000.0
             name+"Y": ("FLOAT", {"default": default[1], "min": min, "max": max, "step": step}),
             name+"Z": ("FLOAT", {"default": default[2], "min": min, "max": max, "step": step}),}
 
+__DIMENSIONS = ["1D", "2D", "3D", "4D"]
+DIMENSIONS_INPUT = {"Dimensions": (__DIMENSIONS, {"default": "3D"})}
+
+def get_kwargs_dim(kwargs):
+    dims = kwargs["Dimensions"]
+    return __DIMENSIONS.index(dims) + 1
+
 def BLENDER_OUTPUT(single=False):
     if single:
         return (("BLENDER", ))

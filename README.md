@@ -23,6 +23,8 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<li>Initial Noise texture (FBM only)</li>
+<br><br>
 <li>Added Checker texture</li>
 <br><br>
 <li>Added colored outputs to most nodes</li>
@@ -124,7 +126,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Transform 6/11</summary>
+<summary>Transform 7/11</summary>
 <ul>
 <li><span style="color:GoldenRod">Rotate 🔵 (No bicubic interpolation)</span></li>
 <li><span style="color:GoldenRod">Scale 🔵 (No bicubic interpolation)</span></li>
@@ -141,14 +143,14 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Texture 2/9</summary>
+<summary>Texture 3/9</summary>
 <ul>
 <li><span style="color:LightGreen"> Brick Texture ✅</span></li>
 <li><span style="color:IndianRed"> Checker Texture ✅</span></li>
 <li><span style="color:IndianRed"> Gabor Texture ❌</span></li>
 <li><span style="color:IndianRed"> Gradient Texture ❌</span></li>
 <li><span style="color:IndianRed"> Magic Texture ❌</span></li>
-<li><span style="color:IndianRed"> Noise Texture ❌</span></li>
+<li><span style="color:IndianRed"> Noise Texture 🔵 (fBM only, no distortion)</span></li>
 <li><span style="color:IndianRed"> Voronoi Texture ❌</span></li>
 <li><span style="color:IndianRed"> Wave Texture ❌</span></li>
 <li><span style="color:IndianRed"> White Noise Texture ❌</span></li>
@@ -171,4 +173,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 28/59
+Implemented nodes: 30/59
