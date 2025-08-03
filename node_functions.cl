@@ -570,6 +570,7 @@ float4 get_gradient(int i){
     return gradients[i%32];
 }
 
+// https://www.shadertoy.com/view/slB3z3
 float4 fade(float4 t) {
     // 6t^5 - 15t^4 + 10t^3
 	return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
