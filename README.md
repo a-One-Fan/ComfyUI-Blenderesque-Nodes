@@ -23,6 +23,8 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<li>Initial Voronoi texture (F1 only, 2D only)</li>
+<br><br>
 <li>Initial Noise texture (FBM only)</li>
 <br><br>
 <li>Added Checker texture</li>
@@ -143,7 +145,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Texture 3/9</summary>
+<summary>Texture 4/9</summary>
 <ul>
 <li><span style="color:LightGreen"> Brick Texture ✅</span></li>
 <li><span style="color:IndianRed"> Checker Texture ✅</span></li>
@@ -151,7 +153,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed"> Gradient Texture ❌</span></li>
 <li><span style="color:IndianRed"> Magic Texture ❌</span></li>
 <li><span style="color:IndianRed"> Noise Texture 🔵 (fBM only, no distortion)</span></li>
-<li><span style="color:IndianRed"> Voronoi Texture ❌</span></li>
+<li><span style="color:IndianRed"> Voronoi Texture 🔵 (F1 only, 2D only)</span></li>
 <li><span style="color:IndianRed"> Wave Texture ❌</span></li>
 <li><span style="color:IndianRed"> White Noise Texture ❌</span></li>
 </ul>
@@ -164,7 +166,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed"> Anti-Aliasing ❌</span></li>
 <li><span style="color:IndianRed"> Despeckle ❌</span></li>
 <li><span style="color:IndianRed"> Dilate/Erode ❌</span></li>
-<li><span style="color:IndianRed"> Filter FIlter :) ❌</span></li>
+<li><span style="color:IndianRed"> Filter Filter :) ❌</span></li>
 <li><span style="color:IndianRed"> Glare ❌</span></li>
 <li><span style="color:IndianRed"> Kuwahara ❌</span></li>
 <li><span style="color:IndianRed"> Pixelate ❌</span></li>
@@ -173,4 +175,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 30/59
+Implemented nodes: 31/59

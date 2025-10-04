@@ -167,6 +167,7 @@ __kernel void transform(__global const float *in_img, const int inx, const int i
 }
 
 // TODO: Might be good but not sure, stare
+// Returns [0.0f, 1.0f]
 float hash_to_float(int x, int y, int seed) {
     x ^= seed;
     x += x << 10;
@@ -512,6 +513,7 @@ float4 fract4(const float4 v){
     return v - floor(v);
 }
 
+// Integer UV4 -> Normalized random 4D vector ([-1, 1])
 float4 hash4_2(const float4 uv4, int seed){
     float3 hs;
     float4 res;
@@ -655,4 +657,191 @@ __kernel void noise_texture(__global const float* uv4_in, const int uvx, const i
     out[gid*3+0] = res.x;
     out[gid*3+1] = res.y;
     out[gid*3+2] = res.z;
+}
+
+struct voronoiOuts{
+    float dist;
+    float3 color; // Semi-redundant. Unique per pos however handy to have this here for layering multiple voronois ("detail")
+    float4 pos;
+};
+
+// Voronoi Outs Add Inplace (+=)
+struct voronoiOuts voai(struct voronoiOuts *a, const struct voronoiOuts *b){
+    a->dist += b->dist;
+    a->color += b->color;
+    a->pos += b->pos;
+
+    return *a;
+}
+
+// Voronoi Outs Multiply (* multiply)
+struct voronoiOuts vom(const struct voronoiOuts *a, float b){
+    struct voronoiOuts res;
+    res.dist = a->dist * b;
+    res.color = a->color * b;
+    res.pos = a->pos * b;
+    return *a;
+}
+
+struct voronoiOuts lerpvo(const struct voronoiOuts *a, const struct voronoiOuts *b, float fac){
+    struct voronoiOuts res;
+    res.dist = fac*a->dist + (1.0f-fac)*b->dist;
+    res.color = fac*a->color + (1.0f-fac)*b->color;
+    res.pos = fac*a->pos + (1.0f-fac)*b->pos;
+    return res;
+}
+
+// Naive 4D voronoi entails calculating ~625 cells for each pixel. Yeesh
+// I do not want that slowness. For now I'm reducing this to 2D. Corners probably don't need to be done but whatever
+
+#define VORO_CORNERCOUNT 25
+
+__constant float VORO_CORNERS_2D_X[VORO_CORNERCOUNT] = {
+    -2, -1, 0, 1, 2,
+    -2, -1, 0, 1, 2,
+    -2, -1, 0, 1, 2,
+    -2, -1, 0, 1, 2,
+    -2, -1, 0, 1, 2,
+};
+
+__constant float VORO_CORNERS_2D_Y[VORO_CORNERCOUNT] = {
+    -2, -2, -2, -2, -2,
+    -1, -1, -1, -1, -1,
+     0,  0,  0,  0,  0,
+     1,  1,  1,  1,  1,
+     2,  2,  2,  2,  2,
+};
+
+void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_chebychev, float randomness, struct voronoiOuts *outs){
+    const float4 uv4_floor = floor(uv4);
+
+    float f1_dist = 10000.0f;
+    float4 f1_pos;
+
+    for(int i=0; i<VORO_CORNERCOUNT; i++){
+        float4 offset = uv4_floor + (float4)(VORO_CORNERS_2D_X[i], VORO_CORNERS_2D_Y[i], 0.0f, 0.0f);
+
+        float4 cornervec = offset + hash4_2(offset, seed) * randomness;
+        
+        float curr_dist;
+        float4 rand_off = uv4 - cornervec;
+        rand_off = fabs(rand_off);
+        if (!is_chebychev){
+            float4 powed = powr(rand_off, exponent);
+            curr_dist = powr(powed.x+powed.y+powed.z+powed.w, 1.0f/exponent);
+        }else{
+            curr_dist = max(rand_off.x, max(rand_off.y, max(rand_off.z, rand_off.w)));
+        }
+
+        bool new_nearest = curr_dist < f1_dist;
+        f1_pos = cornervec * new_nearest + f1_pos * (!new_nearest);
+        f1_dist = curr_dist * new_nearest + f1_dist * (!new_nearest);
+    }
+
+    switch(feature_type){
+        case 0: // F1
+            outs->dist = f1_dist;
+            outs->pos = f1_pos;
+            break;
+        case 1: // F2
+            outs->dist = f1_dist;
+            outs->pos = f1_pos;
+            break;
+        case 2: // Smooth F1, unimplemented :(
+            outs->dist = f1_dist;
+            outs->pos = f1_pos;
+            break;
+        case 3: // Distance to Edge, unimplemented :(
+            outs->dist = f1_dist;
+            outs->pos = f1_pos;
+            break;
+        case 4: // N-Sphere Radius, unimplemented :(
+            outs->dist = f1_dist;
+            outs->pos = f1_pos;
+            break;
+    }
+
+    outs->color = (float3)(
+        hash_to_float(outs->pos.x * 1000.0f, outs->pos.y * 1000.0f, seed), 
+        hash_to_float(outs->pos.y * 1000.0f, outs->pos.z * 1000.0f, seed+84), 
+        hash_to_float(outs->pos.z * 1000.0f, outs->pos.w * 1000.0f, seed-8173));
+
+    return;
+}
+
+// feature_type:
+// 0 - F1 (First closest)
+// 1 - F2 (Second closest)
+// 2 - Smooth F1
+// 3 - Distance to Edge
+// 4 - N-Sphere Radius
+// distance_type:
+// 0 - Euclidean (^2)
+// 1 - Manhattan (^1)
+// 2 - Chebychev (max)
+// 3 - Minkowski (^x)
+__kernel void voronoi_texture(__global const float* uv4_in, const int uvx, const int uvy,
+                            __global const float* sdrlser, const int feature_type, const int distance_type, const int normalize, __global float* out) {
+    int gid = get_global_id(0);
+
+    float4 uv4_converted = getf4(uv4_in, gid);
+    uv4_converted = convert_uv4(uv4_converted);
+
+    float scale =       sdrlser[gid*7+0];
+    float detail =      sdrlser[gid*7+1];
+    float roughness =   sdrlser[gid*7+2];
+    float lacunarity =  sdrlser[gid*7+3];
+    float smoothness =  sdrlser[gid*7+4];
+    float exponent =    sdrlser[gid*7+5];
+    float randomness =  sdrlser[gid*7+6];
+
+    struct voronoiOuts voro_current, voro_lower;
+
+    int is_chebychev = distance_type == 2;
+    switch(distance_type){
+        case 0:
+            exponent = 2.0f;
+            break;
+        case 1:
+            exponent = 1.0f;
+            break;
+        case 2:
+        default:
+            // exponent = exponent;
+            break;
+    }
+    
+    voronoi(scale*uv4_converted, 0, exponent, feature_type, is_chebychev, randomness, &voro_current);
+    voro_lower = voro_current;
+    for(int i=0; i<ceil(detail); i++){
+        voro_lower = voro_current;
+        scale *= lacunarity;
+        voronoi(scale*uv4_converted, i+1, exponent, feature_type, is_chebychev, randomness, &voro_current);
+        struct voronoiOuts voro_rough = vom(&voro_current, roughness);
+        voai(&voro_current, &voro_rough);
+        roughness *= roughness;
+    }
+    struct voronoiOuts res = lerpvo(&voro_lower, &voro_current, detail-floor(detail));
+    if (normalize){
+        //res = maprange4s(res, -1.0f-detail, 1.0f+detail, 0.0f, 1.0f);
+        //fac = res = (val - oldmin) / (oldmax - oldmin);
+        //res = (val - (-1.0f-detail)) / (1.0f+detail - (-1.0f-detail))
+        //res = (val + 1.0f + detail) / (2.0f + 2*detail)
+        //res = val / (2.0f + 2*detail) + 0.5
+        res = vom(&res, 1.0f / (2.0f + 2*detail));
+        struct voronoiOuts zerofive;
+        zerofive.dist = 0.5f;
+        zerofive.color = (float3)(0.5f);
+        zerofive.pos = (float4)(0.5f);
+        voai(&res, &zerofive);
+    }
+
+    out[gid*8+0] = res.dist;
+    out[gid*8+1] = res.color.x;
+    out[gid*8+2] = res.color.y;
+    out[gid*8+3] = res.color.z;
+    out[gid*8+4] = res.pos.x;
+    out[gid*8+5] = res.pos.y;
+    out[gid*8+6] = res.pos.z;
+    out[gid*8+7] = res.pos.w;
 }

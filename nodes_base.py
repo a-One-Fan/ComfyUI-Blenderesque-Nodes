@@ -542,6 +542,25 @@ def BLENDER_OUTPUT_WITHFAC(single=False):
         return ("BLENDER_RGB", "BLENDER_FLOAT", )
     return ("BLENDER_RGB", "BLENDER_FLOAT", "IMAGE", "IMAGE", )
 
+# Types: RGB / COLOR / RGBA, FLOAT / VALUE, VEC / VECTOR
+def BLENDER_OUTPUT_BYLIST(typelist: list[str], single=False):
+    l_up = [t.upper() for t in typelist]
+    l_conv = []
+    for t in l_up:
+        if t in ["RGB", "RGBA", "COLOR", "COLOUR"]:
+            l_conv.append("BLENDER_RGB")
+        elif t in ["FLOAT", "VALUE"]:
+            l_conv.append("BLENDER_FLOAT")
+        elif t in ["VEC", "VECTOR"]:
+            l_conv.append("BLENDER_VEC")
+        else:
+            raise Exception(f"Unknown Blender type: {t}")
+    
+    if single:
+        return tuple(l_conv)
+    return tuple(l_conv + ["IMAGE"] * len(l_conv))
+
+
 def BLEND_VALID_INPUTS(input_types, ref):
     #input_types is a dict of {"Name": "TYPE_NAME"}
     return True

@@ -1497,3 +1497,76 @@ class BlenderNoiseTexture:
         res_fac = BlenderData(res_fac)
 
         return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )
+
+
+FEATURE_TYPES = ["F1", "F2", "Smooth F1", "Distance to Edge", "N-Sphere Radius"]
+DISTANCE_METRICS = ["Euclidean", "Manhattan", "Chebychev", "Minkowski"]
+
+class BlenderVoronoiTexture:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **DIMENSIONS_INPUT,
+                "Feature": (FEATURE_TYPES, {"default": "F1"}),
+                "Distance Metric": (DISTANCE_METRICS, {"default": "Euclidean"}),
+                "Normalize": ("BOOLEAN", {"default": True}),
+                **VECTOR_INPUT("Vector", hidden_default=True),
+                **FLOAT_INPUT("Scale", 5.0, -1000, 1000),
+                **FLOAT_INPUT("Detail", 0.0, 0.0, 15.0),
+                **FLOAT_INPUT("Roughness", 0.5, 0.0, 1.0),
+                **FLOAT_INPUT("Lacunarity", 2.0, 0.0, 1000.0),
+                **FLOAT_INPUT("Smoothness", 1.0, 0.0, 1.0),
+                **FLOAT_INPUT("Exponent", 0.5, 0.0, 1000.0),
+                **FLOAT_INPUT("Randomness", 1.0, 0.0, 1.0),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT_BYLIST(["FLOAT", "RGB", "VEC"]), )
+    RETURN_NAMES = ("Distance", "Color", "Position", "Distance", "Color", "Position", )
+    FUNCTION = "voronoi"
+    CATEGORY = "Blender/Texture"
+    
+    def voronoi(self, **kwargs):
+        feature_type = FEATURE_TYPES.index(kwargs["Feature"])
+        distance_type = DISTANCE_METRICS.index(kwargs["Distance Metric"])
+        normalize = kwargs["Normalize"]
+        dim = get_kwargs_dim(kwargs)
+
+        b_vector = BlenderData(kwargs, "Vector")
+        b_scale = BlenderData(kwargs, "Scale")
+        b_detail = BlenderData(kwargs, "Detail")
+        b_roughness = BlenderData(kwargs, "Roughness")
+        b_lacunarity = BlenderData(kwargs, "Lacunarity")
+        b_smoothness = BlenderData(kwargs, "Smoothness", default_notfound=0.0)
+        b_exponent = BlenderData(kwargs, "Exponent", default_notfound=0.5)
+        b_randomness = BlenderData(kwargs, "Randomness")
+
+        guess_canvas(b_vector, b_scale, b_detail, b_roughness, b_lacunarity, b_smoothness, b_exponent, b_randomness)
+
+        vector = BlenderData(b_vector.as_vector(channels=dim), colortransform_force=False).as_vector(channels=4)
+
+        scale = b_scale.as_float()
+        detail = b_detail.as_float()
+        roughness = b_roughness.as_float()
+        lacunarity = b_lacunarity.as_float()
+        smoothness = b_smoothness.as_float()
+        exponent = b_exponent.as_float()
+        randomness = b_randomness.as_float()
+
+        sdrlser = torch.cat((scale, detail, roughness, lacunarity, smoothness, exponent, randomness), dim=-1)
+
+        res_dist, res_col, res_pos = voronoi_texture(vector, sdrlser, feature_type, distance_type, normalize)
+
+        res_dist = BlenderData(res_dist)
+        res_col = BlenderData(res_col)
+        res_pos = BlenderData(res_pos)
+
+        return (res_dist, res_col, res_pos, res_dist.as_out(), res_col.as_out(), res_pos.as_out(), )

@@ -357,3 +357,62 @@ def noise_texture(
         results_fac.append(res_fac)
 
     return (torch.stack(results_col, dim=0), torch.stack(results_fac, dim=0))
+
+def voronoi_texture(
+    uv4: torch.FloatTensor,
+    sdrlser: torch.FloatTensor,
+    feature_type: int,
+    distance_type: int,
+    normalize: bool
+):
+    """
+    UV4 is Batch x Height x Width x 4 \n
+    sdrlser is Batxh x Height x Width x 7, consisting of\n
+    scale, detail, roughness, lacunarity, smoothness, exponent, randomness\n
+    feature_type is:\n
+    0 - F1\n
+    1 - F2\n
+    2 - Smooth F1\n
+    3 - Distance to Edge\n
+    4 - N-Sphere Radius\n
+    distance_type is:\n
+    0 - Euclidean\n
+    1 - Manhattan\n
+    2 - Chebychev\n
+    3 - Minkowski\n
+    Returns Distance, Color and Position
+    """
+    ctx = global_ish_context
+    mf = cl.mem_flags
+
+    results_dist = []
+    results_col = []
+    results_pos = []
+
+    assert uv4.size()[3] == 4, f"UV4 is not 4-dimensional, is a {uv4.size()} tensor instead"
+    assert sdrlser.size()[3] == 7, f"sdrlser is not 7-dimensional, is a {sdrlser.size()} tensor instead"
+
+    for b in range(uv4.size()[0]):
+        uv4_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(uv4[b]))
+        sdrlser_buf = cl.Buffer(ctx.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=te_to_np_buf(sdrlser[b]))
+        
+        pixels = uv4.size()[2] * uv4.size()[1]
+        res_cl_floats = cl.Buffer(ctx.ctx, mf.WRITE_ONLY, pixels * 8 * np.dtype(np.float32).itemsize)
+        res_np_floats = np.empty(pixels * 8, dtype=np.float32)
+
+        cl_voronoitex = ctx.prog.voronoi_texture
+        cl_voronoitex( ctx.queue, (pixels,), None, 
+            uv4_buf, np.int32(uv4.size()[2]), np.int32(uv4.size()[1]), 
+            sdrlser_buf, np.int32(feature_type), np.int32(distance_type), np.int32(bool(normalize)),
+            res_cl_floats)
+
+        cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)
+
+        res_te = np_buf_to_te(res_np_floats, (uv4.size()[1], uv4.size()[2]), 8)
+        res_dist, res_col, res_pos = res_te.split((1, 3, 4), -1)
+
+        results_dist.append(res_dist)
+        results_col.append(res_col)
+        results_pos.append(res_pos)
+
+    return (torch.stack(results_dist, dim=0), torch.stack(results_col, dim=0), torch.stack(results_pos, dim=0))

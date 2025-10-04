@@ -49,7 +49,7 @@ NODE_CLASS_MAPPINGS = {
     #"BlenderGradientTexture": BlenderGradientTexture,
     #"BlenderMagicTexture": BlenderMagicTexture,
     "BlenderNoiseTexture": BlenderNoiseTexture,
-    #"BlenderVoronoiTexture": BlenderVoronoiTexture,
+    "BlenderVoronoiTexture": BlenderVoronoiTexture,
     #"BlenderWaveTexture": BlenderWaveTexture,
     #"BlenderWhiteNoiseTexture": BlenderWhiteNoiseTexture,
 
@@ -102,7 +102,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     #"BlenderGradientTexture": "Gradient Texture",
     #"BlenderMagicTexture": "Magic Texture",
     "BlenderNoiseTexture": "Noise Texture",
-    #"BlenderVoronoiTexture": "Voronoi Texture",
+    "BlenderVoronoiTexture": "Voronoi Texture",
     #"BlenderWaveTexture": "Wave Texture",
     #"BlenderWhiteNoiseTexture": "White Noise Texture",
 
