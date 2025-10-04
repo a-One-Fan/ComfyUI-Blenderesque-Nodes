@@ -723,8 +723,10 @@ __constant float VORO_CORNERS_2D_Y[VORO_CORNERCOUNT] = {
      2,  2,  2,  2,  2,
 };
 
-void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_chebychev, float randomness, struct voronoiOuts *outs){
-    const float4 uv4_floor = floor(uv4);
+void voronoi(const float4 uv4, const int seed, const float exponent, const int feature_type, const int is_chebychev, 
+            const float randomness, const int dim, struct voronoiOuts *outs){
+    const float4 DIMMASK[4] = {(float4)(1.0f, 0.0f, 0.0f, 0.0f), (float4)(1.0f, 1.0f, 0.0f, 0.0f), (float4)(1.0f, 1.0f, 1.0f, 0.0f), (float4)(1.0f, 1.0f, 1.0f, 1.0f)};
+    const float4 uv4_floor = floor(uv4 * DIMMASK[dim]);
 
     float f1_dist = 10000.0f, f2_dist = 10000.0f;
     float4 f1_pos, f2_pos;
@@ -732,7 +734,7 @@ void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_cheb
     for(int i=0; i<VORO_CORNERCOUNT; i++){
         float4 cell = uv4_floor + (float4)(VORO_CORNERS_2D_X[i], VORO_CORNERS_2D_Y[i], 0.0f, 0.0f);
 
-        float4 cornervec = cell + hash4_1(cell*1000.0f, seed) * randomness;
+        float4 cornervec = cell + hash4_1(cell*1000.0f, seed) * randomness * DIMMASK[dim];
         
         float curr_dist;
         float4 rand_off = uv4 - cornervec;
@@ -795,7 +797,7 @@ void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_cheb
 // 2 - Chebychev (max)
 // 3 - Minkowski (^x)
 __kernel void voronoi_texture(__global const float* uv4_in, const int uvx, const int uvy,
-                            __global const float* sdrlser, const int feature_type, const int distance_type, const int normalize, __global float* out) {
+                            __global const float* sdrlser, const int feature_type, const int distance_type, const int normalize, const int dim, __global float* out) {
     int gid = get_global_id(0);
 
     float4 uv4_converted = getf4(uv4_in, gid);
@@ -825,12 +827,12 @@ __kernel void voronoi_texture(__global const float* uv4_in, const int uvx, const
             break;
     }
     
-    voronoi(scale*uv4_converted, 0, exponent, feature_type, is_chebychev, randomness, &voro_current);
+    voronoi(scale*uv4_converted, 0, exponent, feature_type, is_chebychev, randomness, dim, &voro_current);
     voro_lower = voro_current;
     for(int i=0; i<ceil(detail); i++){
         voro_lower = voro_current;
         scale *= lacunarity;
-        voronoi(scale*uv4_converted, i+1, exponent, feature_type, is_chebychev, randomness, &voro_current);
+        voronoi(scale*uv4_converted, i+1, exponent, feature_type, is_chebychev, randomness, dim, &voro_current);
         struct voronoiOuts voro_rough = vom(&voro_current, roughness);
         voai(&voro_current, &voro_rough);
         roughness *= roughness;

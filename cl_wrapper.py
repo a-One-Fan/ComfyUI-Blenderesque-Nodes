@@ -363,7 +363,8 @@ def voronoi_texture(
     sdrlser: torch.FloatTensor,
     feature_type: int,
     distance_type: int,
-    normalize: bool
+    normalize: bool,
+    dim: int = 4
 ):
     """
     UV4 is Batch x Height x Width x 4 \n
@@ -403,7 +404,7 @@ def voronoi_texture(
         cl_voronoitex = ctx.prog.voronoi_texture
         cl_voronoitex( ctx.queue, (pixels,), None, 
             uv4_buf, np.int32(uv4.size()[2]), np.int32(uv4.size()[1]), 
-            sdrlser_buf, np.int32(feature_type), np.int32(distance_type), np.int32(bool(normalize)),
+            sdrlser_buf, np.int32(feature_type), np.int32(distance_type), np.int32(bool(normalize)), np.int32(dim-1),
             res_cl_floats)
 
         cl.enqueue_copy(ctx.queue, res_np_floats, res_cl_floats)

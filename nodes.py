@@ -1563,7 +1563,7 @@ class BlenderVoronoiTexture:
 
         sdrlser = torch.cat((scale, detail, roughness, lacunarity, smoothness, exponent, randomness), dim=-1)
 
-        res_dist, res_col, res_pos = voronoi_texture(vector, sdrlser, feature_type, distance_type, normalize)
+        res_dist, res_col, res_pos = voronoi_texture(vector, sdrlser, feature_type, distance_type, normalize, dim)
 
         res_dist = BlenderData(res_dist)
         res_col = BlenderData(res_col)
