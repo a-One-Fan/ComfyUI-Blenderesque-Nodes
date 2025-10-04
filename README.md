@@ -23,6 +23,8 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<li>Better Voronoi randomness, F2, and an approximation for edge distance</li>
+<br><br>
 <li>Initial Voronoi texture (F1 only, 2D only)</li>
 <br><br>
 <li>Initial Noise texture (FBM only)</li>
@@ -153,7 +155,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed"> Gradient Texture ❌</span></li>
 <li><span style="color:IndianRed"> Magic Texture ❌</span></li>
 <li><span style="color:IndianRed"> Noise Texture 🔵 (fBM only, no distortion)</span></li>
-<li><span style="color:IndianRed"> Voronoi Texture 🔵 (F1 only, 2D only)</span></li>
+<li><span style="color:IndianRed"> Voronoi Texture 🔵 (F1, F2 & edge distance only, edge distance is approximate, 2D only)</span></li>
 <li><span style="color:IndianRed"> Wave Texture ❌</span></li>
 <li><span style="color:IndianRed"> White Noise Texture ❌</span></li>
 </ul>

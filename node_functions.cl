@@ -514,6 +514,7 @@ float4 fract4(const float4 v){
 }
 
 // Integer UV4 -> Normalized random 4D vector ([-1, 1])
+// TODO: better randomness
 float4 hash4_2(const float4 uv4, int seed){
     float3 hs;
     float4 res;
@@ -691,6 +692,16 @@ struct voronoiOuts lerpvo(const struct voronoiOuts *a, const struct voronoiOuts 
     return res;
 }
 
+// Integer UV4 -> Unnormalized random 4D vector ([0, 1])
+float4 hash4_1(const float4 uv4, int seed){
+    float4 res;
+    res.x = hash_to_float((int)(uv4.x*48.5f)+(int)(uv4.z*37.0f),            (int)(uv4.y*80.0f)+(int)(uv4.w*47.8f),          seed);
+    res.y = hash_to_float((int)(uv4.y*75.0f)-(int)(uv4.x*85.8f)+8163151,    (int)(uv4.z*70.5f)+(int)(uv4.w*15.1f)-7645135,  seed+81923);
+    res.z = hash_to_float((int)(uv4.z*51.5f)-(int)(uv4.y*49.3f)+75182,      (int)(uv4.w*34.2f)+(int)(uv4.x*96.5f)+5924,    seed-79341);
+    res.w = hash_to_float((int)(uv4.w*20.4f)-(int)(uv4.y*42.4f)+3383465,    (int)(uv4.x*96.4f)-(int)(uv4.z*32.1f)-6647234,  seed-13459676);
+    return res;
+}
+
 // Naive 4D voronoi entails calculating ~625 cells for each pixel. Yeesh
 // I do not want that slowness. For now I'm reducing this to 2D. Corners probably don't need to be done but whatever
 
@@ -715,13 +726,13 @@ __constant float VORO_CORNERS_2D_Y[VORO_CORNERCOUNT] = {
 void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_chebychev, float randomness, struct voronoiOuts *outs){
     const float4 uv4_floor = floor(uv4);
 
-    float f1_dist = 10000.0f;
-    float4 f1_pos;
+    float f1_dist = 10000.0f, f2_dist = 10000.0f;
+    float4 f1_pos, f2_pos;
 
     for(int i=0; i<VORO_CORNERCOUNT; i++){
-        float4 offset = uv4_floor + (float4)(VORO_CORNERS_2D_X[i], VORO_CORNERS_2D_Y[i], 0.0f, 0.0f);
+        float4 cell = uv4_floor + (float4)(VORO_CORNERS_2D_X[i], VORO_CORNERS_2D_Y[i], 0.0f, 0.0f);
 
-        float4 cornervec = offset + hash4_2(offset, seed) * randomness;
+        float4 cornervec = cell + hash4_1(cell*1000.0f, seed) * randomness;
         
         float curr_dist;
         float4 rand_off = uv4 - cornervec;
@@ -734,8 +745,14 @@ void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_cheb
         }
 
         bool new_nearest = curr_dist < f1_dist;
+        f2_pos = f1_pos * new_nearest + f2_pos * (!new_nearest);
+        f2_dist = f1_dist * new_nearest + f2_dist * (!new_nearest);
         f1_pos = cornervec * new_nearest + f1_pos * (!new_nearest);
         f1_dist = curr_dist * new_nearest + f1_dist * (!new_nearest);
+
+        bool new_nearest_2 = (curr_dist < f2_dist) && (curr_dist > f1_dist);
+        f2_pos = cornervec * new_nearest_2 + f2_pos * (!new_nearest_2);
+        f2_dist = curr_dist * new_nearest_2 + f2_dist * (!new_nearest_2);
     }
 
     switch(feature_type){
@@ -744,15 +761,15 @@ void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_cheb
             outs->pos = f1_pos;
             break;
         case 1: // F2
-            outs->dist = f1_dist;
-            outs->pos = f1_pos;
+            outs->dist = f2_dist;
+            outs->pos = f2_pos;
             break;
         case 2: // Smooth F1, unimplemented :(
             outs->dist = f1_dist;
             outs->pos = f1_pos;
             break;
-        case 3: // Distance to Edge, unimplemented :(
-            outs->dist = f1_dist;
+        case 3: // Distance to Edge, approximation
+            outs->dist = f2_dist - f1_dist;
             outs->pos = f1_pos;
             break;
         case 4: // N-Sphere Radius, unimplemented :(
@@ -761,10 +778,7 @@ void voronoi(float4 uv4, int seed, float exponent, int feature_type, int is_cheb
             break;
     }
 
-    outs->color = (float3)(
-        hash_to_float(outs->pos.x * 1000.0f, outs->pos.y * 1000.0f, seed), 
-        hash_to_float(outs->pos.y * 1000.0f, outs->pos.z * 1000.0f, seed+84), 
-        hash_to_float(outs->pos.z * 1000.0f, outs->pos.w * 1000.0f, seed-8173));
+    outs->color = hash4_1(outs->pos*1000.0f, seed).xyz;
 
     return;
 }
