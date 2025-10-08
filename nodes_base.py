@@ -103,6 +103,8 @@ class BlenderData:
                 else:
                     print(param)
                     raise KeyError("Can't convert unknown data (see above)")
+            elif type(param) in [int, float]:
+                self.value = [param, ]
             elif not widget_override is None:
                 self.value = widget_override
             elif any.get(paramname + "A", None) != None:
@@ -217,7 +219,7 @@ class BlenderData:
             else:
                 if DEBUG:
                     print(f"Self value: {self.value}")
-                padded = resize_channels(self.value, 4)
+                padded = resize_channels(self.value, 4, 0, 5)
             
             if DEBUG:
                 print(f"Padded: {padded}")
@@ -359,17 +361,21 @@ def extend_channels(te: torch.Tensor, desired_count: int, mode: int=0):
     - 1 = Repeat, cutting off what doesn't fit\n
     - 2 = Repeat last channel\n
     - 3 = Pad with 1\n
+    - 4 = Repeat first channel\n
+    - 5 = Repeat first channel, fill last channel with 1\n
     """
-    assert te.size()[-1] < desired_count, f"{te.size()} has too many channels to extend to {desired_count}"
+
+    ts = list(te.size())
+    assert ts[-1] < desired_count, f"{ts} has too many channels to extend to {desired_count}"
     if mode == 0:
-        return torch.cat((te, torch.zeros(list(te.size())[:-1] + [desired_count - te.size()[-1]])), dim=-1)
+        return torch.cat((te, torch.zeros(list(ts)[:-1] + [desired_count - ts[-1]])), dim=-1)
     elif mode == 3:
-        return torch.cat((te, torch.ones(list(te.size())[:-1] + [desired_count - te.size()[-1]])), dim=-1)
+        return torch.cat((te, torch.ones(list(ts)[:-1] + [desired_count - ts[-1]])), dim=-1)
     elif mode == 1:
-        chopcount = te.size()[-1] - desired_count % te.size()[-1]
-        if chopcount == te.size()[-1]:
+        chopcount = ts[-1] - desired_count % ts[-1]
+        if chopcount == ts[-1]:
             chopcount = 0
-        repeatcount = ceil(desired_count / te.size()[-1])
+        repeatcount = ceil(desired_count / ts[-1])
         repeated = te.repeat((1, 1, 1, repeatcount))
         if chopcount > 0:
             chopped = repeated.split((desired_count, chopcount), dim=3)
@@ -377,8 +383,25 @@ def extend_channels(te: torch.Tensor, desired_count: int, mode: int=0):
             chopped = repeated
         return chopped
     elif mode == 2:
-        first, last = te.split((te.size()[-1]-1, 1), dim=-1)
-        return torch.cat((first, last.repeat((1, 1, 1, desired_count - te.size()[-1]))), dim=-1)
+        first, last = te.split((ts[-1]-1, 1), dim=-1)
+        catl = []
+        if ts[-1] > 1: catl.append(first)
+        catl.append(last.repeat(ts[:-1] + [desired_count - ts[-1] + 1, ]))
+        return torch.cat(catl, dim=-1)
+    elif mode == 4:
+        first, last = te.split((1, te.size()[-1]-1), dim=-1)
+        catl = []
+        catl.append(first.repeat(ts[:-1] + [desired_count - ts[-1] + 1, ]))
+        if te.size()[-1] > 1: catl.append(last)
+        return torch.cat(catl, dim=-1)
+    elif mode == 5:
+        assert desired_count >= te.size()[-1] + 1, f"Extend mode 5 requested to extend to size {desired_count} that is too small for tensor of size {te.size()}"
+        first, last = te.split((1, te.size()[-1]-1), dim=-1)
+        catl = []
+        catl.append(first.repeat(ts[:-1] + [desired_count - ts[-1], ]))
+        if te.size()[-1] > 2: catl.append(last)
+        catl.append(torch.ones(list(te.size())[:-1] + [1, ]))
+        return torch.cat(catl, dim=-1)
     
     raise Exception(f"Unrecognized channel extension mode {mode}")
 
@@ -408,6 +431,8 @@ def resize_channels(te: torch.Tensor | list, desired_count: int, mode_shrink: in
     - 1 = Repeat, cutting off what doesn't fit\n
     - 2 = Repeat last channel\n
     - 3 = Pad with 1\n
+    - 4 = Repeat first channel\n
+    - 5 = Repeat first channel, fill last channel with 1\n
     """
     islist = type(te) == list
     if islist:

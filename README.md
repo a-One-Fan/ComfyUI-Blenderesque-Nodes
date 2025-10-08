@@ -23,6 +23,8 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<li>Minor bugfix/improvement for casting floats to colors</li>
+<br><br>
 <li>Better Voronoi randomness, F2, and an approximation for edge distance</li>
 <br><br>
 <li>Initial Voronoi texture (F1 only, 2D only)</li>
