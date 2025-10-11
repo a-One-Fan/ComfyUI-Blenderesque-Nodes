@@ -594,6 +594,8 @@ class BlenderCombineColor:
         guess_canvas(b_r, b_g, b_b, b_a)
         
         r, g, b, a = b_r.as_float(), b_g.as_float(), b_b.as_float(), b_a.as_float()
+        if mode in ["HSV", "HSL"]: # TODO: Clamps for other color conversions?
+            g = torch.clamp(g, torch.zeros_like(g), torch.ones_like(g))
         rgb = torch.cat((r, g, b), dim=-1)
 
         if mode == "RGB":
@@ -1185,6 +1187,7 @@ class BlenderUV:
         return {
             "optional": {
                 #"Auto Dimensions": ("BOOLEAN", {"default": False}),
+                "Mode": (["Fit", "Shortest is 1", "Longest is 1"], ),
                 **FLOAT_INPUT("Width", 1024, 1, 2**14),
                 **FLOAT_INPUT("Height", 1024, 1, 2**14),
             }
@@ -1206,7 +1209,19 @@ class BlenderUV:
         x = round(b_x.as_primitive_float())
         y = round(b_y.as_primitive_float())
 
-        uv = make_uv(x, y)
+        mode = kwargs["Mode"]
+        if mode == "Fit":
+            xs = 1.0
+            ys = 1.0
+        else:
+            if (x < y and mode == "Shortest is 1") or (x > y and mode == "Longest is 1"):
+                xs = 1.0
+                ys = y / x
+            else:
+                ys = 1.0
+                xs = x / y
+
+        uv = make_uv(x, y, xs, ys)
 
         b_r = BlenderData(uv, colortransform_force=False)
         
