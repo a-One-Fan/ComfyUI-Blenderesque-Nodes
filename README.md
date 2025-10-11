@@ -23,6 +23,8 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<li>Fix broken node resizing</li>
+<br><br>
 <li>Improvements to UV input node</li>
 <li>Bugfix (clamping saturation) for converting from HSV/HSL</li>
 <br><br>

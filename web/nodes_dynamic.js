@@ -4,8 +4,8 @@ import {
     EXTENSION_NAME,
     NODES_ALL,
     CONVERTED_TYPE, RELABEL_MAP, 
-    WIDGET_SUFFIXES, SOLO_INPUT, SOLO_WIDGET, INPUT_DELETED_NAME,
-    HEIGHT_INPUT, HEIGHT_OUTPUT, HEIGHT_WIDGET, HEIGHT_HEADER_OFFSET,
+    WIDGET_SUFFIXES, SOLO_INPUT, PAIRED_INPUT, SOLO_WIDGET, INPUT_DELETED_NAME,
+    HEIGHT_INPUT, HEIGHT_OUTPUT, HEIGHT_WIDGET, HEIGHT_HEADER_OFFSET, HEIGHT_BOTTOM_MARGIN,
 
     COLOR_FLOAT_CONNECTED, COLOR_FLOAT_DISCONNECTED, COLOR_RGB_CONNECTED, COLOR_RGB_DISCONNECTED,
     COLOR_VEC_CONNECTED, COLOR_VEC_DISCONNECTED, COLOR_BOOL_CONNECTED, COLOR_BOOL_DISCONNECTED,
@@ -61,6 +61,11 @@ function showWidget(widget) {
     }
 }
 
+// List of:
+// - (input, SOLO_INPUT) - an input with no corresponding widget/s
+// - (input, PAIRED_INPUT) - an input with corresponding widget/s that should be disregarded
+// - (widget, SOLO_WIDGET) - a widget with no corresponding input/s
+// - (input, [widgets], int(widget count)) - real input-widgets pair
 function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
     let pairs = [];
     for(let i=0; i<node.inputs.length; i++) {
@@ -82,7 +87,11 @@ function get_inputs_widgets_as_pairlist(node, preferred_order = []) {
         if(found_widgets.length > 0) {
             pairs.push([inp, found_widgets, real_widgets]);
         }else{
-            pairs.push([inp, SOLO_INPUT]);
+            if(node.widgets.find((w) => w.name == inp.name)){
+                pairs.push([inp, PAIRED_INPUT]);
+            }else{
+                pairs.push([inp, SOLO_INPUT]);
+            }
         }
     }
 
@@ -168,6 +177,8 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
         if(ordered[i][1] == SOLO_WIDGET) {
             ordered[i][0].force_y = currentHeight;
             ordered[i][0].y = currentHeight;
+        } else if (ordered[i][1] == PAIRED_INPUT){
+            currentHeight -= HEIGHT_WIDGET;
         } else if (ordered[i][1] == SOLO_INPUT || ordered[i][2] == 0) {
             ordered[i][0].pos = [0, currentHeight + HEIGHT_INPUT];
             let desired_label = ordered[i][0].name;
@@ -215,8 +226,7 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
         }
         currentHeight += HEIGHT_WIDGET;
     }
-
-    node._size[1] = currentHeight / 2.0 + HEIGHT_INPUT;
+    node._size[1] = currentHeight + HEIGHT_BOTTOM_MARGIN;
 }
 
 function recalculateHeight(node) {
