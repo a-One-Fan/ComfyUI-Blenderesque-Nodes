@@ -3,6 +3,32 @@ import { CONVERTED_TYPE } from "./consts.js"
 var __defProp2 = Object.defineProperty;
 var __name = (target, value) => __defProp2(target, "name", { value, configurable: true });
 
+function clamp(val, minval, maxval){
+    if(val < minval){
+        return minval;
+    }
+    if(val > maxval){
+        return maxval;
+    }
+    return val;
+}
+
+function hsv_to_rgb(h, s, v){
+    let nr = Math.abs(h * 6.0 - 3.0) - 1.0;
+    let ng = 2.0 - Math.abs(h * 6.0 - 2.0);
+    let nb = 2.0 - Math.abs(h * 6.0 - 4.0);
+
+    nr = clamp(nr, 0.0, 1.0);
+    ng = clamp(ng, 0.0, 1.0);
+    nb = clamp(nb, 0.0, 1.0);
+
+    const r_r = ((nr - 1.0) * s + 1.0) * v;
+    const r_g = ((ng - 1.0) * s + 1.0) * v;
+    const r_b = ((nb - 1.0) * s + 1.0) * v;
+
+    return [r_r, r_g, r_b];
+}
+
 function getWidgetStep(options2) {
     return options2.step2 || (options2.step || 10) * 0.1;
 }
@@ -202,13 +228,28 @@ class NumberWidgetBlender extends BaseSteppedWidget {
                 y2 + height * 0.7
             );
         }
+        if (this.color_triplet){
+            ctx.beginPath();
+            if(!this.color_is_hsv){
+                ctx.fillStyle = `rgb(${this.color_triplet[0].value * 255}, ${this.color_triplet[1].value * 255}, ${this.color_triplet[2].value * 255})`
+            }else{
+                const hsv = hsv_to_rgb(this.color_triplet[0].value, this.color_triplet[1].value, this.color_triplet[2].value);
+                ctx.fillStyle = `rgb(${hsv[0] * 255}, ${hsv[1] * 255}, ${hsv[2] * 255})`
+            }
+            if(show_text){
+                ctx.roundRect(margin + width2 * 0.38, y2, width2 * 0.26 - margin * 2, height, [height * 0.5]);
+            }else{
+                ctx.rect(margin + width2 * 0.38, y2, width2 * 0.26 - margin * 2, height);
+            }
+            ctx.fill();
+        }
         ctx.textAlign = originalTextAlign;
         ctx.strokeStyle = originalStrokeStyle;
         ctx.fillStyle = originalFillStyle;
     }
 
     draw(ctx, node, widget_width, y2, H2, lowQuality) {
-        this.drawWidget(ctx, {y: y2, width: widget_width, show_text: true, margin: BaseWidget.margin})
+        this.drawWidget(ctx, {y: y2, width: widget_width, show_text: !lowQuality, margin: BaseWidget.margin})
     }
 
     onClick({ e, node, canvas }) {

@@ -23,6 +23,11 @@ You should prefer to use the Blender-like data output between these nodes, to re
 <summary>Changelog</summary>
 <br>
 <ul>
+<br><br>
+<li>Improvements to RGB widget triplets across (hopefully) all nodes</li>
+<li>RGB node widget auto-relabelling</li>
+<li>Bugfixes for Mix node UI</li>
+<br><br>
 <li>Fix broken node resizing</li>
 <br><br>
 <li>Improvements to UV input node</li>

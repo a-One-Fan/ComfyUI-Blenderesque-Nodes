@@ -204,9 +204,14 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                 wids[j].y = currentHeight;
                 currentHeight += HEIGHT_WIDGET;
             }
-            if(ordered[i][0].color_hint){
-                ordered[i][0].color_on = ordered[i][0].color_hint;
-                ordered[i][0].color_off = ordered[i][0].color_hint;
+            if(ordered[i][0].color_force || ordered[i][0].color_on_force){
+                if (ordered[i][0].color_force){
+                    ordered[i][0].color_on = ordered[i][0].color_force;
+                    ordered[i][0].color_off = ordered[i][0].color_force;
+                }else{
+                    ordered[i][0].color_on = ordered[i][0].color_on_force;
+                    ordered[i][0].color_off = ordered[i][0].color_off_force;
+                }
             }else{
                 if(wids[0].name.endsWith("R")){
                     ordered[i][0].color_on = COLOR_RGB_CONNECTED;
@@ -219,6 +224,26 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                 if(wids[0].name.endsWith("F")){
                     ordered[i][0].color_on = COLOR_FLOAT_CONNECTED;
                     ordered[i][0].color_off = COLOR_FLOAT_DISCONNECTED;
+                }
+            }
+            if(ordered[i][1].length == 3){
+                let wr = ordered[i][1][0];
+                let wg = ordered[i][1][1];
+                let wb = ordered[i][1][2];
+                
+                let wrname = wr.name;
+                if(wr.blender_suffix_force){
+                    wrname = wr.blender_suffix_force;
+                }
+
+                if(wrname.endsWith("R")){
+                    wr.color_triplet = [wr, wg, wb];
+                    wg.color_triplet = [wr, wg, wb];
+                    wb.color_triplet = [wr, wg, wb];
+                }else{
+                    wr.color_triplet = undefined;
+                    wg.color_triplet = undefined;
+                    wb.color_triplet = undefined;
                 }
             }
             ordered[i][0].shape = 0;
@@ -300,6 +325,7 @@ function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = ()
     }
 
     obj.widgets[wi] = convertWidget(obj.widgets[wi]);
+    return obj.widgets[wi];
 }
 
 function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false) {
@@ -358,11 +384,14 @@ function REMOVE_VECTOR_INPUT(obj, name) {
 function relabel_widgets(node) {
     for(let i=0; i<node.widgets.length; i++) {
         let w = node.widgets[i];
-
-        let last = w.name[w.name.length-1];
-        let mapped = RELABEL_MAP[last];
-        if(mapped != undefined) {
-            w.label = w.name.substr(0, w.name.length-1) + mapped;
+        if (w.label_force){
+            w.label = w.label_force;
+        }else{
+            let last = w.name[w.name.length-1];
+            let mapped = RELABEL_MAP[last];
+            if(mapped != undefined) {
+                w.label = w.name.substr(0, w.name.length-1) + mapped;
+            }
         }
     }
 }
@@ -381,13 +410,29 @@ function get_color_by_type(type) {
     return [COLOR_OUTPUT_GENERIC_CONNECTED, COLOR_OUTPUT_GENERIC_DISCONNECTED];
 }
 
+function set_color_by_type(input, type){
+    let cols = BLENDER_COLOR_MAP[type];
+    if(!cols){
+        throw new Error(`Unknown color type "${type}"!`)
+    }
+    input.color_on = cols[0];
+    input.color_off = cols[1];
+    input.color_on_force = cols[0];
+    input.color_off_force = cols[1];
+}
+
 function recolor_outputs(node) {
     for(let i=0; i<node.outputs.length; i++){
         const o = node.outputs[i];
-        const cols = get_color_by_type(o.type);
-        if (cols){
-            o.color_on = cols[0];
-            o.color_off = cols[1];
+        if(o.color_on_force){
+            o.color_on = o.color_on_force
+            o.color_off = o.color_off_force
+        }else{
+            const cols = get_color_by_type(o.type);
+            if (cols){
+                o.color_on = cols[0];
+                o.color_off = cols[1];
+            }
         }
     }
 }
@@ -455,7 +500,7 @@ function register_map_range(nodeType, nodeData) {
                     iv.label = "Value";
 
                     for(let i=0; i<all_ins.length; i++) {
-                        all_ins[i].color_hint = COLOR_FLOAT_CONNECTED;
+                        set_color_by_type(all_ins[i], "FLOAT");
                     }
                 }else{
                     for(let i=0; i<all_wids.length; i++) {
@@ -471,7 +516,7 @@ function register_map_range(nodeType, nodeData) {
                     iv.label = "Vector";
 
                     for(let i=0; i<all_ins.length; i++) {
-                        all_ins[i].color_hint = COLOR_VEC_CONNECTED;
+                        set_color_by_type(all_ins[i], "VEC");
                     }
                 }
                 this.graph.setDirtyCanvas(true);
@@ -562,8 +607,11 @@ function register_mix(nodeType, nodeData) {
                     __REMOVE_WIDGET(this, "BG");
                     __REMOVE_WIDGET(this, "BB");
 
-                    war.label = "A";
-                    wbr.label = "B";
+                    war.label_force = "A";
+                    wbr.label_force = "B";
+
+                    war.blender_suffix_force = "AF";
+                    wbr.blender_suffix_force = "BF";
                     
                     if(ia.origVisibleWidgets) {
                         ia.origVisibleWidgets = [war]
@@ -571,36 +619,51 @@ function register_mix(nodeType, nodeData) {
                     if(ib.origVisibleWidgets) {
                         ib.origVisibleWidgets = [wbr]
                     }
+
+                    set_color_by_type(ia, "FLOAT");
+                    set_color_by_type(ib, "FLOAT");
                 }else{
                     if(ia.link) {
                         ia.origVisibleWidgets = [war, wag, wab]
                     }else{
-                        __ADD_WIDGET(this, "FLOAT", "AG");
-                        __ADD_WIDGET(this, "FLOAT", "AB");
+                        wag = __ADD_WIDGET(this, "FLOAT", "AG");
+                        wab = __ADD_WIDGET(this, "FLOAT", "AB");
                     }
                     if(ib.link) {
                         ib.origVisibleWidgets = [wbr, wbg, wbb]
                     }else{
-                        __ADD_WIDGET(this, "FLOAT", "BG");
-                        __ADD_WIDGET(this, "FLOAT", "BB");
+                        wbg = __ADD_WIDGET(this, "FLOAT", "BG");
+                        wbb = __ADD_WIDGET(this, "FLOAT", "BB");
                     }
 
                     if(widgetval == "Vector") {
-                        war.label = "A X";
-                        wag.label = "A Y";
-                        wab.label = "A Z";
+                        war.label_force = "A X";
+                        wag.label_force = "A Y";
+                        wab.label_force = "A Z";
 
-                        wbr.label = "B X";
-                        wbg.label = "B Y";
-                        wbb.label = "B Z";
+                        wbr.label_force = "B X";
+                        wbg.label_force = "B Y";
+                        wbb.label_force = "B Z";
+                        
+                        war.blender_suffix_force = "AX";
+                        wbr.blender_suffix_force = "BX";
+
+                        set_color_by_type(ia, "VEC");
+                        set_color_by_type(ib, "VEC");
                     }else{
-                        war.label = "A Red";
-                        wag.label = "A Green";
-                        wab.label = "A Blue";
+                        war.label_force = "A Red";
+                        wag.label_force = "A Green";
+                        wab.label_force = "A Blue";
 
-                        wbr.label = "B Red";
-                        wbg.label = "B Green";
-                        wbb.label = "B Blue";
+                        wbr.label_force = "B Red";
+                        wbg.label_force = "B Green";
+                        wbb.label_force = "B Blue";
+
+                        war.blender_suffix_force = "AR";
+                        wbr.blender_suffix_force = "BR";
+
+                        set_color_by_type(ia, "RGB");
+                        set_color_by_type(ib, "RGB");
                     }
                 }
 
@@ -650,7 +713,7 @@ function register_math(nodeType, nodeData) {
             }
 
             for(let i=0; i<ins.length; i++) {
-                wabc[i].label = ins[i];
+                wabc[i].label_force = ins[i];
             }
 
             this.graph.setDirtyCanvas(true);
@@ -663,10 +726,80 @@ function register_math(nodeType, nodeData) {
     }
 }
 
+function register_rgb(nodeType, nodeData) {
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+
+        let wmode = this.widgets.find((w) => w.name == "Mode");
+
+        wmode.callback = (widgetval) => {
+            let wr = this.widgets.find((w) => w.name == "Red/Hue");
+            let wg = this.widgets.find((w) => w.name == "Green/Saturation");
+            let wb = this.widgets.find((w) => w.name == "Blue/Value");
+
+            const triplet = [wr, wg, wb];
+
+            if(widgetval == "RGB"){
+                wr.label_force = "Red";
+                wg.label_force = "Green";
+                wb.label_force = "Blue";
+
+                wr.color_is_hsv = false;
+                wg.color_is_hsv = false;
+                wb.color_is_hsv = false;
+            }else{
+                wr.label_force = "Hue";
+                wg.label_force = "Saturation";
+                wb.label_force = "Value";
+
+                wr.color_is_hsv = true;
+                wg.color_is_hsv = true;
+                wb.color_is_hsv = true;
+            }
+
+            wr.color_triplet = triplet;
+            wg.color_triplet = triplet;
+            wb.color_triplet = triplet;
+
+            this.graph.setDirtyCanvas(true);
+            rearrange_inputs_and_widgets(this);
+            relabel_widgets(this);
+        }
+        
+        wmode.callback(wmode.value);
+
+        return me;
+    }
+}
+
+function register_template(nodeType, nodeData) {
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+
+        let w = this.widgets.find((w) => w.name == "Template");
+
+        w.callback = (widgetval) => {
+            let wa = this.widgets.find((w) => w.name == "AF");
+            let wb = this.widgets.find((w) => w.name == "BF");
+            let wc = this.widgets.find((w) => w.name == "CF");
+
+            this.graph.setDirtyCanvas(true);
+            rearrange_inputs_and_widgets(this);
+        }
+        
+        w.callback(w.value);
+
+        return me;
+    }
+}
+
 const REGISTER_MAP = {
     "BlenderMapRange": register_map_range,
     "BlenderMix": register_mix,
     "BlenderMath": register_math,
+    "BlenderRGB": register_rgb,
 }
 
 app.registerExtension({

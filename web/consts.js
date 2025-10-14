@@ -51,7 +51,7 @@ const WIDGET_SUFFIXES = ["F", "R", "G", "B", "A", "X", "Y", "Z"];
 const SOLO_INPUT = "solo_input";
 const PAIRED_INPUT = "paired_input";
 const SOLO_WIDGET = "solo_widget";
-const INPUT_DELETED_NAME = "X";
+const INPUT_DELETED_NAME = "|";
 
 const RELABEL_MAP = {
     "F": "",
