@@ -400,7 +400,13 @@ function get_color_by_type(type) {
     if (!type.startsWith(BLENDER_OUTPUT_TYPE)){
         return false;
     }
-    const type_rest = type.substr(BLENDER_OUTPUT_TYPE.length+1);
+    let comma = type.indexOf(",");
+    if (comma == -1){ 
+        comma = undefined;
+    }else{
+        comma = comma - (BLENDER_OUTPUT_TYPE.length+1)
+    }
+    const type_rest = type.substr(BLENDER_OUTPUT_TYPE.length+1, comma);
     const cols = BLENDER_COLOR_MAP[type_rest];
 
     if (cols){
@@ -486,6 +492,8 @@ function register_map_range(nodeType, nodeData) {
 
                 let all_wids = [wfmin, wfmax, wtmin, wtmax];
 
+                let out = this.outputs[0]
+
                 if(widgetval == "Float") {
                     for(let i=0; i<all_wids.length; i++) {
                         for(let j=1; j<3; j++) {
@@ -502,6 +510,7 @@ function register_map_range(nodeType, nodeData) {
                     for(let i=0; i<all_ins.length; i++) {
                         set_color_by_type(all_ins[i], "FLOAT");
                     }
+                    set_color_by_type(out, "FLOAT");
                 }else{
                     for(let i=0; i<all_wids.length; i++) {
                         for(let j=0; j<3; j++) {
@@ -518,6 +527,7 @@ function register_map_range(nodeType, nodeData) {
                     for(let i=0; i<all_ins.length; i++) {
                         set_color_by_type(all_ins[i], "VEC");
                     }
+                    set_color_by_type(out, "VEC");
                 }
                 this.graph.setDirtyCanvas(true);
                 rearrange_inputs_and_widgets(this);
@@ -600,6 +610,8 @@ function register_mix(nodeType, nodeData) {
                 let ia = this.inputs.find((i) => i.name == "A");
                 let ib = this.inputs.find((i) => i.name == "B");
 
+                let out = this.outputs[0];
+
                 if(widgetval == "Float") {
                     __REMOVE_WIDGET(this, "AG");
                     __REMOVE_WIDGET(this, "AB");
@@ -622,6 +634,7 @@ function register_mix(nodeType, nodeData) {
 
                     set_color_by_type(ia, "FLOAT");
                     set_color_by_type(ib, "FLOAT");
+                    set_color_by_type(out, "FLOAT");
                 }else{
                     if(ia.link) {
                         ia.origVisibleWidgets = [war, wag, wab]
@@ -650,6 +663,7 @@ function register_mix(nodeType, nodeData) {
 
                         set_color_by_type(ia, "VEC");
                         set_color_by_type(ib, "VEC");
+                        set_color_by_type(out, "VEC");
                     }else{
                         war.label_force = "A Red";
                         wag.label_force = "A Green";
@@ -664,6 +678,7 @@ function register_mix(nodeType, nodeData) {
 
                         set_color_by_type(ia, "RGB");
                         set_color_by_type(ib, "RGB");
+                        set_color_by_type(out, "RGB");
                     }
                 }
 
@@ -795,6 +810,11 @@ function register_template(nodeType, nodeData) {
     }
 }
 
+// canConnectTo(inputNode, input, this.fromSlot)
+function blender_canconnect(inputNode, input, output){
+    return true;
+}
+
 const REGISTER_MAP = {
     "BlenderMapRange": register_map_range,
     "BlenderMix": register_mix,
@@ -828,6 +848,16 @@ app.registerExtension({
                 }
                 return me;
             }
+        }
+
+        const onNodeCreatedPrev2 = nodeType.prototype.onNodeCreated;
+        nodeType.prototype.onNodeCreated = async function () {
+            const me = await onNodeCreatedPrev2?.apply(this);
+            const oldCanConnectTo = this.canConnectTo;
+            this.canConnectTo = (node, input, output) => {
+                return true; //input.type == BLENDER_OUTPUT_TYPE || output.type == BLENDER_OUTPUT_TYPE || oldCanConnectTo(node, input, output);
+            }
+            return me;
         }
 
         let reg = REGISTER_MAP[nodeData.name];

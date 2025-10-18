@@ -15,14 +15,18 @@ pip install -r ./ComfyUI-Blendersque-Nodes/requirements.txt
 
 Usage:<br><br>
 Nodes will accept most inputs, akin to Blender's implicit conversion between vectors, floats, colors, and image types thereof.<br>
-Nodes will output Blender-like data, and an image for general Comfy usage.<br>
-Differently sized images are automatically cropped/padded like Blender's compositor.
-You should prefer to use the Blender-like data output between these nodes, to reduce loss in precision from excessive colorspace transforms, or avoid very small images inteded for a simple preview, among other possible issues.<br>
+Nodes will output special Blender-like data that gets automatically converted if used on non-Blenderesque nodes.<br>
+Differently sized images are automatically cropped/padded like Blender's compositor.<br>
 
 <details>
 <summary>Changelog</summary>
 <br>
 <ul>
+<br><br>
+<li>Implicit conversion of Blender data when used on other nodes - merging the regular and Image outputs on all nodes, and allowing that single output to be seamlessly used with any node</li>
+<li>Updated demo image</li>
+<li>Fixed output coloring for mix/map range nodes</li>
+<li>Minor bugfixes</li>
 <br><br>
 <li>Improvements to RGB widget triplets across (hopefully) all nodes</li>
 <li>RGB node widget auto-relabelling</li>
@@ -68,18 +72,16 @@ Hopefully in the future I'll look into integrating this with https://github.com/
 <li><span style="color:GoldenRod">Dynamic inputs 🔵</span></li>
 <li><span style="color:GoldenRod">Dynamic widgets 🔵</span></li>
 <li><span style="color:LightGreen">Merged input sockets and default values ("widgets") ✅</span></li>
-<li><span style="color:IndianRed">Merged output blender and image sockets ❌</span></li>
+<li><span style="color:IndianRed">Merged output blender and image sockets ✅</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
 <li>Currently, Comfy does not support loading EXR images. Various vector passes (e.g. UV) need 32 bit data, and will look much worse with 8 bit data. -</span></li>
 </ul>
 </details>
 
 <details>
-<summary>New Comfy-Specific Nodes 1/2 and new functionality to old nodes</summary>
+<summary>New Comfy-Specific Nodes 1/1 and new functionality to old nodes 1/2</summary>
 <li><span style="color:LightGreen">Input/UV ✅</span></li>
 Creates a basic UV gradient for mapping other textures with.
-<li><span style="color:IndianRed">Converter/Extract Data ❌</span></li>
-Convert Blender Data to float, image, or get its canvas size.
 <br>
 <br>
 Functionality:

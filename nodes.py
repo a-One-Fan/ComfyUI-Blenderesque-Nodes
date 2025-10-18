@@ -21,13 +21,14 @@ class BlenderValue:
             },
         }
     
-    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), "FLOAT", "INT")
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
+    RETURN_NAMES = ("Value", )
     FUNCTION = "get_value"
     CATEGORY = "Blender/Input" 
     
     def get_value(self, Value):
         bd = BlenderData(Value)
-        return (bd, bd.as_out(), Value, int(Value))
+        return (bd, )
     
 class BlenderRGB:
     def __init__(self):
@@ -47,7 +48,7 @@ class BlenderRGB:
         }
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(),)
-    RETURN_NAMES = ("Color", "Image")
+    RETURN_NAMES = ("Color", )
     FUNCTION = "get_rgb"
     CATEGORY = "Blender/Input" 
     
@@ -59,13 +60,13 @@ class BlenderRGB:
         a = kwargs["Alpha"]
         
         if mode == "RGB":
-            bd = BlenderData((r, g, b, a))
+            bd = BlenderData((r, g, b, a), colortransform_force=True)
         
         if mode == "HSV":
             r, g, b = hsv_to_rgb_primitive(r, g, b)
-            bd = BlenderData((r, g, b, a))
+            bd = BlenderData((r, g, b, a), colortransform_force=True)
         
-        return (bd, bd.as_out())
+        return (bd, )
 
 class BlenderBrightnessContrast:
     def __init__(self):
@@ -87,7 +88,7 @@ class BlenderBrightnessContrast:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(),)
-    RETURN_NAMES = ("Color", "Image")
+    RETURN_NAMES = ("Color", )
     FUNCTION = "brightness_contrast"
     CATEGORY = "Blender/Color" 
 
@@ -106,7 +107,7 @@ class BlenderBrightnessContrast:
 
         b_res = BlenderData(res, alpha)
 
-        return (b_res, b_res.as_out(), )
+        return (b_res, )
     
 class BlenderGamma:
     def __init__(self):
@@ -125,8 +126,8 @@ class BlenderGamma:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(),)
-    RETURN_NAMES = ("Color", "Image")
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
+    RETURN_NAMES = ("Color", )
     FUNCTION = "gamma"
     CATEGORY = "Blender/Color"
 
@@ -140,7 +141,8 @@ class BlenderGamma:
 
         res = torch.pow(color, gamma).maximum(torch.zeros_like(color))
         b_res = BlenderData(res, alpha)
-        return (b_res, b_res.as_out())
+
+        return (b_res, )
 
 class BlenderInvertColor:
     def __init__(self):
@@ -160,7 +162,7 @@ class BlenderInvertColor:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Color", "Image")
+    RETURN_NAMES = ("Color", )
     FUNCTION = "invert"
     CATEGORY = "Blender/Color"
 
@@ -175,7 +177,8 @@ class BlenderInvertColor:
         res = ((1.0-color)*fac + color*(1.0-fac)).maximum(torch.zeros_like(color))
         
         b_res = BlenderData(res, alpha)
-        return (b_res, b_res.as_out())
+
+        return (b_res, )
     
 class BlenderSeparateColor:
     def __init__(self):
@@ -195,8 +198,8 @@ class BlenderSeparateColor:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(),)
-    RETURN_NAMES = ("R", "R", "G", "G", "B", "B", "A", "A")
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT())
+    RETURN_NAMES = ("R", "G", "B", "A")
     FUNCTION = "separate_color"
     CATEGORY = "Blender/Converter"
     
@@ -225,7 +228,7 @@ class BlenderSeparateColor:
         r, g, b = rgb.split(1, dim=-1)
         b_r, b_g, b_b, b_a = BlenderData(r), BlenderData(g), BlenderData(b), BlenderData(a)
         
-        return (b_r, b_r.as_out(), b_g, b_g.as_out(), b_b, b_b.as_out(), b_a, b_a.as_out())
+        return (b_r, b_g, b_b, b_a)
     
 class BlenderMapRange:
     def __init__(self):
@@ -251,8 +254,8 @@ class BlenderMapRange:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
-    RETURN_TYPES = (*BLENDER_OUTPUT(), )
-    RETURN_NAMES = ("Result", "Result")
+    RETURN_TYPES = (*BLENDER_OUTPUT_VECTOR(), )
+    RETURN_NAMES = ("Result", )
     FUNCTION = "map_range"
     CATEGORY = "Blender/Converter"
     
@@ -305,7 +308,7 @@ class BlenderMapRange:
 
         b_r = BlenderData(res)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
     
 class BlenderBlackbody:
     def __init__(self):
@@ -324,7 +327,7 @@ class BlenderBlackbody:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Color", "Image")
+    RETURN_NAMES = ("Color", )
     FUNCTION = "blackbody"
     CATEGORY = "Blender/Converter"
 
@@ -337,7 +340,7 @@ class BlenderBlackbody:
         res = blackbody_temperature_to_rec709(fac) # TODO: rec709 -> linear?
         
         b_res = BlenderData(res)
-        return (b_res, b_res.as_out())
+        return (b_res, )
     
 class BlenderWavelength:
     def __init__(self):
@@ -356,7 +359,7 @@ class BlenderWavelength:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Color", "Image")
+    RETURN_NAMES = ("Color", )
     FUNCTION = "wavelength"
     CATEGORY = "Blender/Converter"
 
@@ -369,7 +372,7 @@ class BlenderWavelength:
         res = ciexyz_to_rgb(wavelength_to_xyz(fac))
         
         b_res = BlenderData(res)
-        return (b_res, b_res.as_out())
+        return (b_res, )
     
 class BlenderRGBtoBW:
     def __init__(self):
@@ -388,7 +391,7 @@ class BlenderRGBtoBW:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
-    RETURN_NAMES = ("Val", "Image")
+    RETURN_NAMES = ("Val", )
     FUNCTION = "rgb_to_bw"
     CATEGORY = "Blender/Converter"
 
@@ -397,7 +400,7 @@ class BlenderRGBtoBW:
         guess_canvas(b_col)
         
         b_res = BlenderData(b_col.as_float())
-        return (b_res, b_res.as_out())
+        return (b_res, )
     
 class BlenderSeparateXYZ:
     def __init__(self):
@@ -415,8 +418,8 @@ class BlenderSeparateXYZ:
     def VALIDATE_INPUTS(self, input_types):
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
-    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), )
-    RETURN_NAMES = ("X", "X", "Y", "Y", "Z", "Z")
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT(), *BLENDER_OUTPUT_FLOAT())
+    RETURN_NAMES = ("X", "Y", "Z")
     FUNCTION = "separate_xyz"
     CATEGORY = "Blender/Converter"
 
@@ -427,7 +430,7 @@ class BlenderSeparateXYZ:
         xyz = b_vec.as_vector(channels=3)
         x, y, z = xyz.split(1, dim=-1)
         b_x, b_y, b_z = BlenderData(x), BlenderData(y), BlenderData(z)
-        return (b_x, b_x.as_out(), b_y, b_y.as_out(), b_z, b_z.as_out())
+        return (b_x, b_y, b_z)
     
 class BlenderCombineXYZ:
     def __init__(self):
@@ -448,7 +451,7 @@ class BlenderCombineXYZ:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_VECTOR(), )
-    RETURN_NAMES = ("Vector", "Image")
+    RETURN_NAMES = ("Vector", )
     FUNCTION = "combine_xyz"
     CATEGORY = "Blender/Converter"
 
@@ -461,7 +464,7 @@ class BlenderCombineXYZ:
         x, y, z = b_x.as_float(), b_y.as_float(), b_z.as_float()
         
         b_res = BlenderData(torch.cat((x, y, z), dim=-1))
-        return (b_res, b_res.as_out())
+        return (b_res, )
     
 class BlenderClamp:
     def __init__(self):
@@ -483,7 +486,7 @@ class BlenderClamp:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
-    RETURN_NAMES = ("Result", "Result")
+    RETURN_NAMES = ("Result", )
     FUNCTION = "clamp"
     CATEGORY = "Blender/Converter"
 
@@ -506,7 +509,7 @@ class BlenderClamp:
         val = tmix(tmix(val, mi, val < mi), mx, val > mx)
         
         b_res = BlenderData(val)
-        return (b_res, b_res.as_out())
+        return (b_res, )
 
 class BlenderHueSaturationValue:
     def __init__(self):
@@ -529,7 +532,7 @@ class BlenderHueSaturationValue:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Result", "Result")
+    RETURN_NAMES = ("Result", )
     FUNCTION = "do_hsv"
     CATEGORY = "Blender/Color"
 
@@ -557,7 +560,7 @@ class BlenderHueSaturationValue:
         rgb = tmix(col, rgb, fac)
 
         b_res = BlenderData(rgb, alpha)
-        return (b_res, b_res.as_out())
+        return (b_res, )
 
 class BlenderCombineColor:
     def __init__(self):
@@ -581,7 +584,7 @@ class BlenderCombineColor:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Color", "Image", )
+    RETURN_NAMES = ("Color", )
     FUNCTION = "combine_color"
     CATEGORY = "Blender/Converter"
     
@@ -615,7 +618,7 @@ class BlenderCombineColor:
 
         b_res = BlenderData(rgb, a)
         
-        return (b_res, b_res.as_out(), )
+        return (b_res, )
 
 class BlenderSetAlpha:
     def __init__(self):
@@ -636,7 +639,7 @@ class BlenderSetAlpha:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
 
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Result", "Result")
+    RETURN_NAMES = ("Result", )
     FUNCTION = "set_alpha"
     CATEGORY = "Blender/Color"
 
@@ -654,7 +657,7 @@ class BlenderSetAlpha:
             new_alpha *= orig_alpha
         
         b_res = BlenderData(col, new_alpha)
-        return (b_res, b_res.as_out())
+        return (b_res, )
 
 class BlenderRotate:
     def __init__(self):
@@ -675,7 +678,7 @@ class BlenderRotate:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "rotate"
     CATEGORY = "Blender/Transform"
     
@@ -701,7 +704,7 @@ class BlenderRotate:
         res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
 
 class BlenderScale:
     def __init__(self):
@@ -723,7 +726,7 @@ class BlenderScale:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "scale"
     CATEGORY = "Blender/Transform"
     
@@ -749,7 +752,7 @@ class BlenderScale:
         res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
 
 class BlenderTranslate:
     def __init__(self):
@@ -772,7 +775,7 @@ class BlenderTranslate:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "translate"
     CATEGORY = "Blender/Transform"
     
@@ -798,7 +801,7 @@ class BlenderTranslate:
         res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
 
 class BlenderTransform:
     def __init__(self):
@@ -822,7 +825,7 @@ class BlenderTransform:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "transform"
     CATEGORY = "Blender/Transform"
     
@@ -850,7 +853,7 @@ class BlenderTransform:
         res = transform(col, (col.size()[1], col.size()[2]), locrotscale, filter, ext)
         b_r = BlenderData(res)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
     
 class BlenderMix:
     def __init__(self):
@@ -879,7 +882,7 @@ class BlenderMix:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "mix"
     CATEGORY = "Blender/Converter"
 
@@ -986,7 +989,7 @@ class BlenderMix:
             
             b_res = BlenderData(mixed, a_alpha)
 
-        return (b_res, b_res.as_out(), )
+        return (b_res, )
 
 class BlenderMath:
     def __init__(self):
@@ -1016,7 +1019,7 @@ class BlenderMath:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "math"
     CATEGORY = "Blender/Converter"
 
@@ -1131,7 +1134,7 @@ class BlenderMath:
 
         b_res = BlenderData(res)
 
-        return (b_res, b_res.as_out(), )
+        return (b_res, )
 
 class BlenderLensDistortion:
     def __init__(self):
@@ -1155,7 +1158,7 @@ class BlenderLensDistortion:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "lensdistort"
     CATEGORY = "Blender/Transform"
     
@@ -1176,7 +1179,7 @@ class BlenderLensDistortion:
         res = lens_distortion(col, distortion, dispersion, projector, jitter, fit)
         b_r = BlenderData(res)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
 
 class BlenderUV:
     def __init__(self):
@@ -1198,7 +1201,7 @@ class BlenderUV:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_VECTOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "uv"
     CATEGORY = "Blender/Input"
     
@@ -1225,7 +1228,7 @@ class BlenderUV:
 
         b_r = BlenderData(uv, colortransform_force=False)
         
-        return (b_r, b_r.as_out(), )
+        return (b_r, )
 
 class BlenderCrop:
     def __init__(self):
@@ -1251,7 +1254,7 @@ class BlenderCrop:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "crop"
     CATEGORY = "Blender/Transform"
     
@@ -1281,7 +1284,7 @@ class BlenderCrop:
         else:
             b_col.set_canvas(newcanvas, False)
         
-        return (b_col, b_col.as_out(), )
+        return (b_col, )
     
 class BlenderMapUV:
     def __init__(self):
@@ -1303,7 +1306,7 @@ class BlenderMapUV:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), )
-    RETURN_NAMES = ("Image", "Image", )
+    RETURN_NAMES = ("Image", )
     FUNCTION = "mapuv"
     CATEGORY = "Blender/Transform"
     
@@ -1323,7 +1326,7 @@ class BlenderMapUV:
 
         b_col = BlenderData(res)
         
-        return (b_col, b_col.as_out(), )
+        return (b_col, )
     
 class BlenderBrickTexture:
     def __init__(self):
@@ -1356,7 +1359,7 @@ class BlenderBrickTexture:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
-    RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
+    RETURN_NAMES = ("Color", "Fac")
     FUNCTION = "brick"
     CATEGORY = "Blender/Texture"
     
@@ -1397,7 +1400,7 @@ class BlenderBrickTexture:
         res_col = BlenderData(res_col)
         res_fac = BlenderData(res_fac)
 
-        return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )
+        return (res_col, res_fac)
     
 class BlenderCheckerTexture:
     def __init__(self):
@@ -1420,7 +1423,7 @@ class BlenderCheckerTexture:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
-    RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
+    RETURN_NAMES = ("Color", "Fac")
     FUNCTION = "checker"
     CATEGORY = "Blender/Texture"
     
@@ -1442,7 +1445,7 @@ class BlenderCheckerTexture:
         res_col = BlenderData(res_col)
         res_fac = BlenderData(res_fac)
 
-        return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )
+        return (res_col, res_fac)
     
 NOISE_TYPES = ["Multifractal", "Ridged Multifcractal", "Hybrid Multifractal", "fBM", "Hetero Terrain"]
 
@@ -1473,7 +1476,7 @@ class BlenderNoiseTexture:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_WITHFAC(), )
-    RETURN_NAMES = ("Color", "Fac", "Color", "Fac", )
+    RETURN_NAMES = ("Color", "Fac")
     FUNCTION = "noise"
     CATEGORY = "Blender/Texture"
     
@@ -1511,7 +1514,7 @@ class BlenderNoiseTexture:
         res_col = BlenderData(res_col)
         res_fac = BlenderData(res_fac)
 
-        return (res_col, res_fac, res_col.as_out(), res_fac.as_out(), )
+        return (res_col, res_fac)
 
 
 FEATURE_TYPES = ["F1", "F2", "Smooth F1", "Distance to Edge", "N-Sphere Radius"]
@@ -1545,7 +1548,7 @@ class BlenderVoronoiTexture:
         return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
     
     RETURN_TYPES = (*BLENDER_OUTPUT_BYLIST(["FLOAT", "RGB", "VEC"]), )
-    RETURN_NAMES = ("Distance", "Color", "Position", "Distance", "Color", "Position", )
+    RETURN_NAMES = ("Distance", "Color", "Position")
     FUNCTION = "voronoi"
     CATEGORY = "Blender/Texture"
     
@@ -1584,4 +1587,4 @@ class BlenderVoronoiTexture:
         res_col = BlenderData(res_col)
         res_pos = BlenderData(res_pos)
 
-        return (res_dist, res_col, res_pos, res_dist.as_out(), res_col.as_out(), res_pos.as_out(), )
+        return (res_dist, res_col, res_pos)

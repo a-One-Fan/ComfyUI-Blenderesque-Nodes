@@ -4,6 +4,7 @@ from .util import *
 from .cl_wrapper import transform
 from math import floor, ceil
 
+BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES = ",FLOAT,INT,IMAGE,MASK"
 DEFAULT_CANVAS = (64, 64)
 DEBUG = False
 
@@ -130,6 +131,9 @@ class BlenderData:
         else:
             raise Exception(f"Can not convert {type(any)} to Blender data: {any}")
         
+        if not self.canvas:
+            self.canvas = DEFAULT_CANVAS
+        
         if DEBUG:
             print(f"blender data init, paramname ", end="")
             if type(paramname) is torch.Tensor:
@@ -155,8 +159,11 @@ class BlenderData:
             print(colortransform_if_converting, colortransform_force, widget_override, default_notfound)
             print(self)
 
+    def is_primitive(self):
+        return not self.value is None
+
     def __str__(self):
-        if self.image is None:
+        if self.is_primitive():
             return f"Primitive {self.value}, canvas {self.canvas}"
         return f"Tensor {self.image.size()}, canvas {self.canvas}"
 
@@ -206,12 +213,11 @@ class BlenderData:
         
         return self.image.split([2, self.image.size()[3]-2], dim=-1)[0]
 
-
     def as_rgba(self, batch=1) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 4] tensor"""
         size = (batch, self.canvas[0], self.canvas[1])
 
-        if self.image == None:
+        if self.is_primitive():
             if self.is_color:
                 padded = self.value
                 if len(padded) < 4:
@@ -260,7 +266,7 @@ class BlenderData:
     
     def as_float(self, batch=1, use_alpha=False) -> torch.Tensor:
         """Interpret as a [batch, canvas x, canvas y, 1] tensor"""
-        if self.image == None:
+        if self.is_primitive():
             avg = sum(self.value) / len(self.value)
             return torch.full((batch, self.canvas[0], self.canvas[1], 1), avg)
         
@@ -274,10 +280,30 @@ class BlenderData:
         
         raise Exception(f"Failed to interpret tensor of size {self.image.size()} as float!")
         return None
+    
+    def as_comfy_mask(self, batch=1, use_alpha=False):
+        """
+        Interpret as a [batch, canvas x, canvas y] tensor\n
+        ComfyUI mask tensors lack a 1-dim at the end
+        """
+        fl = self.as_float(batch, use_alpha)
+        return fl.squeeze(-1)
 
     def as_vector(self, batch=1, channels=None, mode_shrink = 0, mode_extend = 0) -> torch.Tensor:
-        """Interpret as a [batch, canvas x, canvas y, 3?] tensor"""
-        if self.image is None:
+        """
+        Interpret as a [batch, canvas x, canvas y, 3?] tensor\n
+        Shrink modes:\n
+        - 0 = Chop off\n
+        - 1 = Pair downscale\n
+        Extend modes:\n
+        - 0 = Pad with 0\n
+        - 1 = Repeat, cutting off what doesn't fit\n
+        - 2 = Repeat last channel\n
+        - 3 = Pad with 1\n
+        - 4 = Repeat first channel\n
+        - 5 = Repeat first channel, fill last channel with 1\n
+        """
+        if self.is_primitive():
             size = (batch, self.canvas[0], self.canvas[1], 1)
             if channels is None:
                 val_channels = self.value
@@ -288,12 +314,9 @@ class BlenderData:
         if channels is None:
             return self.image
         return resize_channels(self.image, channels)
-
-    def is_value(self):
-        return not self.value is None
     
     def as_primitive_float(self) -> float:
-        if self.image:
+        if not self.is_primitive():
             if self.is_color and self.image.size()[3] == 4:
                 im_to_mean, _ = self.image.split((3, 1), dim=-1)
             else:
@@ -343,7 +366,7 @@ def col_to_float(tensor):
 def guess_canvas(*blens: BlenderData, default=DEFAULT_CANVAS):
     res = None
     for b in blens:
-        if type(b.image) is torch.Tensor:
+        if not b.is_primitive():
             res = b.image.size()[1:-1]
             break
 
@@ -452,7 +475,7 @@ def resize_channels(te: torch.Tensor | list, desired_count: int, mode_shrink: in
 def ensure_samesize_channels(*blens: BlenderData, force=None):
     first_te = None
     for b in blens:
-        if not b.image is None:
+        if not b.is_primitive():
             first_te = b.image
             break
 
@@ -468,7 +491,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
         desired_channels = force
     
     for b in blens:
-        if not b.image is None:
+        if not b.is_primitive():
             b.image = resize_channels(b.image, desired_channels)
         else:
             if type(b.value) in [int, float]:
@@ -542,48 +565,33 @@ def get_kwargs_dim(kwargs):
     dims = kwargs["Dimensions"]
     return __DIMENSIONS.index(dims) + 1
 
-def BLENDER_OUTPUT(single=False):
-    if single:
-        return (("BLENDER", ))
-    return ("BLENDER", "IMAGE", )
+def BLENDER_OUTPUT_FLOAT():
+    return (("BLENDER_FLOAT" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES, ))
 
-def BLENDER_OUTPUT_FLOAT(single=False):
-    if single:
-        return (("BLENDER_FLOAT", ))
-    return ("BLENDER_FLOAT", "IMAGE", )
+def BLENDER_OUTPUT_COLOR():
+    return (("BLENDER_RGB" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES, ))
 
-def BLENDER_OUTPUT_COLOR(single=False):
-    if single:
-        return (("BLENDER_RGB", ))
-    return ("BLENDER_RGB", "IMAGE", )
+def BLENDER_OUTPUT_VECTOR():
+    return (("BLENDER_VEC" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES, ))
 
-def BLENDER_OUTPUT_VECTOR(single=False):
-    if single:
-        return (("BLENDER_VEC", ))
-    return ("BLENDER_VEC", "IMAGE", )
-
-def BLENDER_OUTPUT_WITHFAC(single=False):
-    if single:
-        return ("BLENDER_RGB", "BLENDER_FLOAT", )
-    return ("BLENDER_RGB", "BLENDER_FLOAT", "IMAGE", "IMAGE", )
+def BLENDER_OUTPUT_WITHFAC():
+    return ("BLENDER_RGB" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES, "BLENDER_FLOAT" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES, )
 
 # Types: RGB / COLOR / RGBA, FLOAT / VALUE, VEC / VECTOR
-def BLENDER_OUTPUT_BYLIST(typelist: list[str], single=False):
+def BLENDER_OUTPUT_BYLIST(typelist: list[str]):
     l_up = [t.upper() for t in typelist]
     l_conv = []
     for t in l_up:
         if t in ["RGB", "RGBA", "COLOR", "COLOUR"]:
-            l_conv.append("BLENDER_RGB")
+            l_conv.append("BLENDER_RGB" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES)
         elif t in ["FLOAT", "VALUE"]:
-            l_conv.append("BLENDER_FLOAT")
+            l_conv.append("BLENDER_FLOAT" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES)
         elif t in ["VEC", "VECTOR"]:
-            l_conv.append("BLENDER_VEC")
+            l_conv.append("BLENDER_VEC" + BLENDER_SUPPORTED_IMPLICIT_CONVERSION_TYPES)
         else:
             raise Exception(f"Unknown Blender type: {t}")
     
-    if single:
-        return tuple(l_conv)
-    return tuple(l_conv + ["IMAGE"] * len(l_conv))
+    return tuple(l_conv)
 
 
 def BLEND_VALID_INPUTS(input_types, ref):
