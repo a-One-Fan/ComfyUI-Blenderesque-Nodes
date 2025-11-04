@@ -1136,6 +1136,127 @@ class BlenderMath:
 
         return (b_res, )
 
+class BlenderVectorMath:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                "Operation": (["Add", "Subtract", "Multiply", "Divide", "Multiply Add", 
+                               "Cross Product", "Project", "Reflect", "Refract", "Faceforward", "Dot Product",
+                               "Distance", "Length", "Scale", "Normalize",
+                               "Absolute", "Minimum", "Maximum", "Floor", "Ceil", "Fraction", "Modulo",
+                               "Wrap", "Snap", 
+                               "Sine", "Cosine", "Tangent"], ),
+                **VECTOR_INPUT("A", 0.0, -inf, inf),
+                **VECTOR_INPUT("B", 0.0, -inf, inf),
+                **VECTOR_INPUT("C", 0.0, -inf, inf),
+                **FLOAT_INPUT("IOR", 1.0, -inf, inf),
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT_FLOAT(), )
+    RETURN_NAMES = ("Image", )
+    FUNCTION = "vector_math"
+    CATEGORY = "Blender/Converter"
+
+    def vector_math(self, **kwargs):
+        op = kwargs["Operation"]
+
+        b_a = BlenderData(kwargs, "A", default_notfound=0.0)
+        b_b = BlenderData(kwargs, "B", default_notfound=0.0)
+        b_c = BlenderData(kwargs, "C", default_notfound=0.0)
+        b_ior = BlenderData(kwargs, "IOR", default_notfound=1.0)
+        ensure_samesize_channels(b_a, b_b, b_c)
+        guess_canvas(b_a, b_b, b_c, b_ior)
+
+        a, b, c, ior = b_a.as_vector(), b_b.as_vector(), b_c.as_vector(), b_ior.as_float()
+
+        dims = a.size()[-1]
+        # [batch, canvas x, canvas y, dims]
+
+        if op == "Add":
+            res = a + b
+        elif op == "Subtract":
+            res = a - b
+        elif op == "Multiply":
+            res = a * b
+        elif op == "Divide":
+            res = tmix(a / b, 0.0, torch.isclose(b, torch.zeros_like(b)))
+        elif op == "Multiply Add":
+            res = a * b + c
+        
+        elif op == "Cross Product":
+            res = torch.cross(a, b, dim=-1)
+        elif op == "Project":
+            dotab = torch.sum(a * b, dim=-1).unsqueeze(dim=-1)
+            dotbb = torch.sum(b * b, dim=-1).unsqueeze(dim=-1)
+            res = torch.cat([dotab / dotbb] * dims, dim=-1) * b 
+        elif op == "Reflect":
+            bnorm = torch.sum(torch.pow(a, torch.full_like(a, 2)), dim=-1).unsqueeze(dim=-1)
+            bnorm = b / torch.cat([bnorm] * dims, dim=-1)
+            dotab = torch.sum(a * bnorm, dim=-1).unsqueeze(dim=-1)
+            dotab = torch.cat([dotab] * dims, dim=-1)
+            res = a - 2 * dotab * b
+        elif op == "Refract":
+            res = a # TODO implement me
+        elif op == "Faceforward":
+            res = torch.sum(b * c, dim=-1).unsqueeze(dim=-1)
+            res = res < 0
+            res = res.to(a.dtype)
+            res = res * a + (1.0 - res) * -a
+        elif op == "Dot Product":
+            res = torch.sum(a * b, dim=-1).unsqueeze(dim=-1)
+
+        elif op == "Distance":
+            a = a - b
+        elif op in ["Length", "Distance"]:
+            res = torch.sum(torch.pow(a, torch.full_like(a, 2)), dim=-1).unsqueeze(dim=-1)
+            res = torch.pow(res, torch.full_like(res, 0.5))
+        elif op == "Scale":
+            res = a * torch.cat([ior] * dims, dim=-1)
+        elif op == "Normalize":
+            res = torch.sum(torch.pow(a, torch.full_like(a, 2)), dim=-1).unsqueeze(dim=-1)
+            res = a / torch.cat([res] * dims, dim=-1)
+        
+        elif op == "Absolute":
+            res = torch.abs(a)
+        elif op == "Minimum":
+            res = torch.minimum(a, b)
+        elif op == "Maximum":
+            res = torch.maximum(a, b)
+        elif op == "Floor":
+            res = torch.floor(a)
+        elif op == "Ceil":
+            res = torch.ceil(a)
+        elif op == "Fraction":
+            res = a - torch.floor(a)
+        elif op == "Modulo":
+            res = a % b
+        elif op == "Wrap": # blender/source/blender/nodes/shader/nodes/node_shader_math.cc -> line 312
+            range = b - c
+            if_branch = a - (range * ((a - c) / range).floor())
+            res = tmix(if_branch, c, range == 0.0)
+        elif op == "Snap":
+            res = torch.floor(a / b) * b
+        
+        elif op == "Sine":
+            res = torch.sin(a)
+        elif op == "Cosine":
+            res = torch.cos(a)
+        elif op == "Tangent":
+            res = torch.tan(a)
+
+        b_res = BlenderData(res)
+
+        return (b_res, )
+
 class BlenderLensDistortion:
     def __init__(self):
         pass

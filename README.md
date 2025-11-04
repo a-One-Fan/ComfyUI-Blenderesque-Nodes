@@ -23,6 +23,8 @@ Differently sized images are automatically cropped/padded like Blender's composi
 <br>
 <ul>
 <br><br>
+<li>Initial vector math node (no refraction)</li>
+<br><br>
 <li>Implicit conversion of Blender data when used on other nodes - merging the regular and Image outputs on all nodes, and allowing that single output to be seamlessly used with any node</li>
 <li>Updated demo image</li>
 <li>Fixed output coloring for mix/map range nodes</li>
@@ -74,6 +76,8 @@ Hopefully in the future I'll look into integrating this with https://github.com/
 <li><span style="color:LightGreen">Merged input sockets and default values ("widgets") ✅</span></li>
 <li><span style="color:IndianRed">Merged output blender and image sockets ✅</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
+<li><span style="color:IndianRed">Unplugging a disabled input visually enables it and its associated widgets, the input is supposed to still be disabled ❌</span></li>
+<li><span style="color:IndianRed">Soft min/max ❌</span></li>
 <li>Currently, Comfy does not support loading EXR images. Various vector passes (e.g. UV) need 32 bit data, and will look much worse with 8 bit data. -</span></li>
 </ul>
 </details>
@@ -124,7 +128,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Converter 11/12</summary>
+<summary>Converter 12/12</summary>
 <ul>
 <li><span style="color:GoldenRod">Blackbody 🔵 (Missing rec709->linear, very minor color difference)</span></li>
 <li><span style="color:LightGreen">Clamp ✅</span></li>
@@ -138,7 +142,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen">RGB to BW ✅</span></li>
 <li><span style="color:GoldenRod">Separate Color 🔵 (No colorspace option for YUV/YCbCr)</span></li>
 <li><span style="color:LightGreen">Separate XYZ ✅</span></li>
-<li><span style="color:IndianRed">Vector Math ❌</span></li>
+<li><span style="color:IndianRed">Vector Math 🔵 (No refraction)</span></li>
 <li><span style="color:LightGreen">Wavelength ✅</span></li>
 </ul>
 </details>
@@ -153,8 +157,9 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:IndianRed">Corner Pin ❌</span></li>
 <li><span style="color:LightGreen">Crop ✅</span></li>
 <li><span style="color:IndianRed">Displace ❌</span></li>
+<li><span style="color:IndianRed">Mapping ❌</span></li>
 <li><span style="color:IndianRed">Flip ❌</span></li>
-<li><span style="color:IndianRed">Map UV ✅ (Bit depth note*)</span></li>
+<li><span style="color:IndianRed">Map UV ✅ (Bit depth note* in Meta/Bugs/TODO)</span></li>
 <li><span style="color:GoldenRod">Lens Distortion 🔵 (Border of image is handled a bit differently than Blender; alpha is ignored, like in Blender)</span></li>
 <li><span style="color:IndianRed">Movie Distortion ❌</span></li>
 </ul>
@@ -191,4 +196,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 31/59
+Implemented nodes: 32/60

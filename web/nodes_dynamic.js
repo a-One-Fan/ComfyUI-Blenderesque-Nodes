@@ -14,7 +14,7 @@ import {
 
     BLENDER_OUTPUT_TYPE, BLENDER_COLOR_MAP,
 
-    MATH_NAMEMAP,
+    MATH_NAMEMAP, VECTOR_MATH_NAMEMAP,
 
     COLSTEP, inf, 
 
@@ -189,6 +189,9 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                 ordered[i][0].color_off = COLOR_DISABLED;
             }else{
                 ordered[i][0].shape = 0;
+                if (ordered[i][0].label_force){
+                    desired_label = ordered[i][0].label_force;
+                }
             }
             ordered[i][0].label = desired_label;
         } else {
@@ -285,7 +288,7 @@ function __REMOVE_INPUT(obj, name) {
     i.backupLabel = INPUT_DELETED_NAME;
 }
 
-function __ADD_INPUT(obj, name, type=0) {
+function __ADD_INPUT(obj, name, type=0, colors=null) {
     let ii = obj.inputs.findIndex((i) => i.name == name);
     let i = null;
     if (ii == -1) {
@@ -294,6 +297,10 @@ function __ADD_INPUT(obj, name, type=0) {
         i = obj.inputs[ii];
     }
     i.backupLabel = undefined;
+    if (colors){
+        i.color_on = colors[0];
+        i.color_off = colors[1];
+    }
 }
 
 function __REMOVE_WIDGET(obj, name) {
@@ -329,7 +336,7 @@ function __ADD_WIDGET(obj, type, name, label, def, min, max, step, callback = ()
 }
 
 function COLOR_INPUT(obj, name, def=1.0, alpha=false, step=COLSTEP, max=COLMAX, astep=0.005, hidden_default=false) {
-    __ADD_INPUT(obj, name, 0);
+    __ADD_INPUT(obj, name, 0, [COLOR_RGB_CONNECTED, COLOR_RGB_DISCONNECTED]);
     if (hidden_default) {
         return;
     }
@@ -352,7 +359,7 @@ function REMOVE_COLOR_INPUT(obj, name, alpha=false) {
 }
 
 function FLOAT_INPUT(obj, name, def=0.0, min=0.0, max=1.0, step=COLSTEP, hidden_default=false) {
-    __ADD_INPUT(obj, name, 0);
+    __ADD_INPUT(obj, name, 0, [COLOR_FLOAT_CONNECTED, COLOR_FLOAT_DISCONNECTED]);
     if (hidden_default) {
         return;
     }
@@ -365,7 +372,7 @@ function REMOVE_FLOAT_INPUT(obj, name) {
 }
 
 function VECTOR_INPUT(obj, name, def=0.0, step=COLSTEP, min=-inf, max=inf, hidden_default=false) {
-    __ADD_INPUT(obj, name, 0);
+    __ADD_INPUT(obj, name, 0, [COLOR_VEC_CONNECTED, COLOR_VEC_DISCONNECTED]);
     if (hidden_default) {
         return;
     }
@@ -741,6 +748,102 @@ function register_math(nodeType, nodeData) {
     }
 }
 
+function register_vector_math(nodeType, nodeData) {
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+
+        let w_operation = this.widgets.find((w) => w.name == "Operation");
+
+        w_operation.callback = (widgetval) => {
+            this.title = widgetval;
+            let ins = VECTOR_MATH_NAMEMAP[widgetval];
+            if(!ins) {
+                ins = ["Vector", "Vector"];
+            }
+
+            let vector_length = ins.length;
+            let has_float = false;
+
+            if(ins.length == 4) {
+                has_float = true;
+                vector_length = ins.findIndex((i) => i == " ");
+            }
+
+            if(vector_length == 1) {
+                REMOVE_VECTOR_INPUT(this, "B");
+                REMOVE_VECTOR_INPUT(this, "C");
+            }
+            if(vector_length == 2) {
+                VECTOR_INPUT(this, "B");
+                REMOVE_VECTOR_INPUT(this, "C");
+            }
+            if(vector_length == 3) {
+                VECTOR_INPUT(this, "B");
+                VECTOR_INPUT(this, "C");
+            }
+
+            if(has_float){
+                FLOAT_INPUT(this, "IOR");
+            }else{
+                REMOVE_FLOAT_INPUT(this, "IOR");
+            }
+
+            let wax = this.widgets.find((w) => w.name == "AX");
+            let way = this.widgets.find((w) => w.name == "AY");
+            let waz = this.widgets.find((w) => w.name == "AZ");
+
+            let wbx = this.widgets.find((w) => w.name == "BX");
+            let wby = this.widgets.find((w) => w.name == "BY");
+            let wbz = this.widgets.find((w) => w.name == "BZ");
+
+            let wcx = this.widgets.find((w) => w.name == "CX");
+            let wcy = this.widgets.find((w) => w.name == "CY");
+            let wcz = this.widgets.find((w) => w.name == "CZ");
+
+            let wior = this.widgets.find((w) => w.name == "IORF");
+            
+            let wabc = [[wax, way, waz], [wbx, wby, wbz], [wcx, wcy, wcz]];
+
+            let ia = this.inputs.find((i) => i.name == "A");
+            let ib = this.inputs.find((i) => i.name == "B");
+            let ic = this.inputs.find((i) => i.name == "C");
+
+            let iabc = [ia, ib, ic];
+
+            let out = this.outputs[0];
+
+            const VEC_SUFFIXES = ["X", "Y", "Z"];
+            for(let i=0; i<vector_length; i++) {
+                for(let j=0; j<3; j++){
+                    wabc[i][j].label_force = ins[i] + " " + VEC_SUFFIXES[j];
+                }
+                iabc[i].label_force = ins[i];
+            }
+
+            if(has_float){
+                wior.label_force = ins[3];
+            }
+
+            if(["Dot Product", "Length", "Distance"].find((w) => w == widgetval)){
+                set_color_by_type(out, "FLOAT");
+                out.label = "Value";
+            }else{
+                set_color_by_type(out, "VEC");
+                out.label = "Vector";
+            }
+
+            this.graph.setDirtyCanvas(true);
+            relabel_widgets(this);
+            rearrange_inputs_and_widgets(this);
+        }
+        
+        w_operation.callback(w_operation.value);
+
+        return me;
+    }
+}
+
 function register_rgb(nodeType, nodeData) {
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = async function () {
@@ -819,6 +922,7 @@ const REGISTER_MAP = {
     "BlenderMapRange": register_map_range,
     "BlenderMix": register_mix,
     "BlenderMath": register_math,
+    "BlenderVectorMath": register_vector_math,
     "BlenderRGB": register_rgb,
 }
 

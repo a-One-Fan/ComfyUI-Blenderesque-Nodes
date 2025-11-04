@@ -471,7 +471,7 @@ def resize_channels(te: torch.Tensor | list, desired_count: int, mode_shrink: in
     if islist:
         return res.tolist()
     return res
-    
+
 def ensure_samesize_channels(*blens: BlenderData, force=None):
     first_te = None
     for b in blens:
@@ -480,7 +480,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
             break
 
     if force is None:
-        if not first_te is None:
+        if not (first_te == None):
             desired_channels = first_te.size()[3]
         else:
             if type(blens[0].value) in [int, float]:
@@ -489,7 +489,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
                 desired_channels = len(blens[0].value)
     else:
         desired_channels = force
-    
+
     for b in blens:
         if not b.is_primitive():
             b.image = resize_channels(b.image, desired_channels)
@@ -499,7 +499,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
             else:
                 as_te = torch.Tensor(b.value)
             as_te = as_te.unsqueeze(0).unsqueeze(0).unsqueeze(0)
-            as_te = resize_channels(as_te, desired_channels)
+            as_te = resize_channels(as_te, desired_channels, mode_extend=(as_te.size()[0] == 1))
             b.value = as_te[0][0][0].tolist()
     return blens
 

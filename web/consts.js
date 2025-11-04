@@ -127,6 +127,25 @@ const MATH_NAMEMAP = {
     "To Degrees": ["Radians"],
 }
 
+// 4th name is for the float input. If there's less than 3 vector inputs, use " " for a blank vector input.
+const VECTOR_MATH_NAMEMAP = {
+    "Multiply Add": ["Vector", "Multiplier", "Addend"],
+    "Refract": ["Vector", "Vector", " ", "IOR"],
+    "Faceforward": ["Vector", "Incident", "Reference"],
+    "Length": ["Vector"],
+    "Scale": ["Vector", " ", " ", "Scale"],
+    "Normalize": ["Vector"],
+    "Absolute": ["Vector"],
+    "Floor": ["Vector"],
+    "Ceil": ["Vector"],
+    "Fraction": ["Vector"],
+    "Wrap": ["Vector", "Max", "Min"],
+    "Snap": ["Vector", "Increment"],
+    "Sine": ["Vector"],
+    "Cosine": ["Vector"],
+    "Tangent": ["Vector"],
+}
+
 export {
 
     EXTENSION_NAME,
@@ -148,5 +167,5 @@ export {
 
     RELABEL_MAP,
 
-    NODES_ALL, MATH_NAMEMAP
+    NODES_ALL, MATH_NAMEMAP, VECTOR_MATH_NAMEMAP
 }

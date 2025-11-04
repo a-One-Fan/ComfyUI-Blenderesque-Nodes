@@ -29,7 +29,7 @@ NODE_CLASS_MAPPINGS = {
     "BlenderRGBtoBW": BlenderRGBtoBW,
     "BlenderSeparateColor": BlenderSeparateColor,
     "BlenderSeparateXYZ": BlenderSeparateXYZ,
-    #"BlenderVectorMath": BlenderVectorMath,
+    "BlenderVectorMath": BlenderVectorMath,
     "BlenderWavelength": BlenderWavelength,
 
     "BlenderRotate": BlenderRotate,
@@ -82,7 +82,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BlenderRGBtoBW": "RGB to BW",
     "BlenderSeparateColor": "Separate Color",
     "BlenderSeparateXYZ": "Separate XYZ",
-    #"BlenderVectorMath": "Vector Math",
+    "BlenderVectorMath": "Vector Math",
     "BlenderWavelength": "Wavelength",
 
     "BlenderRotate": "Rotate",
