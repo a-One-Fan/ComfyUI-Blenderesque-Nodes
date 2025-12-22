@@ -9,7 +9,7 @@ old_amnol = execution._async_map_node_over_list
 
 # https://github.com/comfyanonymous/ComfyUI/blob/master/execution.py
 # !!! Possibly sensitive to Comfy updates
-async def patched_async_map_node_over_list(prompt_id, unique_id, obj, input_data_all: dict, func, allow_interrupt=False, execution_block_cb=None, pre_execute_cb=None, hidden_inputs=None):
+async def patched_async_map_node_over_list(prompt_id, unique_id, obj, input_data_all: dict, func, *args, **kwargs):
     if type(obj).__name__.find("Blender") == -1:
         new_in = {}
         it: dict = {}
@@ -20,8 +20,7 @@ async def patched_async_map_node_over_list(prompt_id, unique_id, obj, input_data
                 it = type(obj).INPUT_TYPES()
         except Exception as e: # Possibly unnecessary, but just in case
             print(f"Bad type: \n{e}\n{obj}\n{type(obj)}\n\n\n")
-            return await old_amnol(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb, hidden_inputs)
-        
+            return await old_amnol(prompt_id, unique_id, obj, input_data_all, func, *args, **kwargs)
         for k in input_data_all.keys():
             v = input_data_all[k]
             vnew = []
@@ -47,7 +46,6 @@ async def patched_async_map_node_over_list(prompt_id, unique_id, obj, input_data
                     vnew.append(vi)
             new_in[k] = vnew
         input_data_all = new_in
-
-    return await old_amnol(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb, hidden_inputs)
+    return await old_amnol(prompt_id, unique_id, obj, input_data_all, func, *args, **kwargs)
 
 execution._async_map_node_over_list = patched_async_map_node_over_list

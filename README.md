@@ -23,6 +23,8 @@ Differently sized images are automatically cropped/padded like Blender's composi
 <br>
 <ul>
 <br><br>
+<li>Fix the nodes breaking with a newer Comfy version</li>
+<br><br>
 <li>Initial vector math node (no refraction)</li>
 <br><br>
 <li>Implicit conversion of Blender data when used on other nodes - merging the regular and Image outputs on all nodes, and allowing that single output to be seamlessly used with any node</li>
