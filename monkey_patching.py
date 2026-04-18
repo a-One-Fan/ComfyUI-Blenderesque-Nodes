@@ -39,6 +39,10 @@ async def patched_async_map_node_over_list(prompt_id, unique_id, obj, input_data
                         converted = vi.as_comfy_mask()
                     elif target_type == "LATENT":
                         converted = vi.as_vector()
+                    elif target_type == "*": 
+                        # TODO: This might need more guessing. This is the theoretically correct choice. 
+                        # The practically correct choice would likely be to convert to rgb.
+                        converted = vi
                     else:
                         raise Exception(f"Unhandled Blenderesque monkey patching for type {target_type}, input types {it}")
                     vnew.append(converted)

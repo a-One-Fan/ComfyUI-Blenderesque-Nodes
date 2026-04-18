@@ -23,6 +23,10 @@ Differently sized images are automatically cropped/padded like Blender's composi
 <br>
 <ul>
 <br><br>
+<li>Fix for converting blender node outputs to * (any) type (e.g. Pyssss playsound node)</li>
+<li>Disabled colorspace conversion for mix rgb node's color mode</li>
+<li>Fix for map range clamping when output range min > max</li>
+<br><br>
 <li>Fix the nodes breaking with a newer Comfy version</li>
 <br><br>
 <li>Initial vector math node (no refraction)</li>

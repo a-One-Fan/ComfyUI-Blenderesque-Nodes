@@ -304,7 +304,7 @@ class BlenderMapRange:
         res = (1.0 - fac) * tomin + fac * tomax
         
         if kwargs["Clamp"]:
-            res = torch.clamp(res, tomin, tomax)
+            res = torch.clamp(res, torch.minimum(tomin, tomax), torch.maximum(tomin, tomax))
 
         b_r = BlenderData(res)
         
@@ -891,8 +891,8 @@ class BlenderMix:
         clamp_fac = kwargs["Clamp Factor"]
 
         b_fac = BlenderData(kwargs, "Factor")
-        b_a = BlenderData(kwargs, "A", colortransform_if_converting=dtype=="Color", widget_override=kwargs.get("AR") if dtype=="Float" else None)
-        b_b = BlenderData(kwargs, "B", colortransform_if_converting=dtype=="Color", widget_override=kwargs.get("BR") if dtype=="Float" else None)
+        b_a = BlenderData(kwargs, "A", colortransform_if_converting=False, widget_override=kwargs.get("AR") if dtype=="Float" else None)
+        b_b = BlenderData(kwargs, "B", colortransform_if_converting=False, widget_override=kwargs.get("BR") if dtype=="Float" else None)
         if dtype == "Vector":
             ensure_samesize_channels(b_a, b_b)
         guess_canvas(b_fac, b_a, b_b)
