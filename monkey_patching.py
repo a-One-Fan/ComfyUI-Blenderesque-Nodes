@@ -34,7 +34,7 @@ async def patched_async_map_node_over_list(prompt_id, unique_id, obj, input_data
                     elif target_type == "INT":
                         converted = int(vi.as_primitive_float())
                     elif target_type == "IMAGE":
-                        converted = vi.as_rgb()
+                        converted = vi.as_rgb_out()
                     elif target_type == "MASK":
                         converted = vi.as_comfy_mask()
                     elif target_type == "LATENT":

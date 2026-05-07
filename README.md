@@ -23,6 +23,9 @@ Differently sized images are automatically cropped/padded like Blender's composi
 <br>
 <ul>
 <br><br>
+<li>Hopefully sRGB handling improvements</li>
+<li>Fixed broken syntax</li>
+<br><br>
 <li>Added gradient texture node (also includes convenience features for swapping X/Y and centering)</li>
 <li>Added image reference as input for UV node, for convenience</li>
 <li>Colored Vector (UV map) inputs for texture nodes</li>
@@ -177,7 +180,7 @@ Most other input nodes seem redundant or not applicable.
 </details>
 
 <details>
-<summary>Texture 4/9</summary>
+<summary>Texture 5/9</summary>
 <ul>
 <li><span style="color:LightGreen"> Brick Texture ✅</span></li>
 <li><span style="color:IndianRed"> Checker Texture ✅</span></li>
@@ -207,4 +210,4 @@ Most other input nodes seem redundant or not applicable.
 </ul>
 </details>
 
-Implemented nodes: 32/60
+Implemented nodes: 33/60

@@ -891,8 +891,8 @@ class BlenderMix:
         clamp_fac = kwargs["Clamp Factor"]
 
         b_fac = BlenderData(kwargs, "Factor")
-        b_a = BlenderData(kwargs, "A", colortransform_if_converting=False, widget_override=kwargs.get("AR") if dtype=="Float" else None)
-        b_b = BlenderData(kwargs, "B", colortransform_if_converting=False, widget_override=kwargs.get("BR") if dtype=="Float" else None)
+        b_a = BlenderData(kwargs, "A", widget_override=kwargs.get("AR") if dtype=="Float" else None)
+        b_b = BlenderData(kwargs, "B", widget_override=kwargs.get("BR") if dtype=="Float" else None)
         if dtype == "Vector":
             ensure_samesize_channels(b_a, b_b)
         guess_canvas(b_fac, b_a, b_b)
@@ -1725,7 +1725,7 @@ class BlenderGradientTexture:
         return {
             "optional": {
                 **VECTOR_INPUT("Vector", hidden_default=True),
-                "Gradient Type": (["Linear", "Quadratic", "Easing", "Diagonal", "Spherical", "Quadratic Sphere", "Radial"], "tooltip": "Style of the color blending."),
+                "Gradient Type": (["Linear", "Quadratic", "Easing", "Diagonal", "Spherical", "Quadratic Sphere", "Radial"], {"tooltip": "Style of the color blending."}),
                 "Swap X /Y": ("BOOLEAN", {"default": True, "tooltip": "Swap X and Y."} ), # For some reason, the frontend shows a weird space between the / and Y. 
                 # Having a space between X and / makes it look more normal.
                 "Center": ("BOOLEAN", {"default": False, "tooltip": "Shift the vector by -0.5, -0.5 to center spherical/radial coordinates."})

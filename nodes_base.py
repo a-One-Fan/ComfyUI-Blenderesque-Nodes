@@ -242,7 +242,7 @@ class BlenderData:
         
         raise Exception(f"Failed to interpret tensor of size {self.image.size()} as rgba!")
     
-    def as_out(self, batch=1) -> torch.Tensor:
+    def as_rgb_out(self, batch=1) -> torch.Tensor:
         """Interpret as standard ComfyUI image tensor (RGBA)"""
 
         if self.canvas == None:
@@ -252,7 +252,12 @@ class BlenderData:
         else:
             res = self.as_rgba(batch)
         
-        return rgb_to_srgb(res)
+        res_rgb, res_a = res.split([3, 1], dim=-1) # Sadly, many custom nodes do not support RGBA because they're poorly made.
+
+        #if self.is_color:
+        res_rgb = rgb_to_srgb(res_rgb)
+        
+        return res_rgb
 
     def as_rgb_a(self, batch=1) -> tuple[torch.Tensor, torch.Tensor]:
         """Interpret as ([batch, canvas x, canvas y, 3], [batch, canvas x, canvas y, 1]) tensors"""
