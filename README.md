@@ -23,6 +23,11 @@ Differently sized images are automatically cropped/padded like Blender's composi
 <br>
 <ul>
 <br><br>
+<li>Added gradient texture node (also includes convenience features for swapping X/Y and centering)</li>
+<li>Added image reference as input for UV node, for convenience</li>
+<li>Colored Vector (UV map) inputs for texture nodes</li>
+<li>UV maps from the UV map node's W channel is now black</li>
+<br><br>
 <li>Fix for converting blender node outputs to * (any) type (e.g. Pyssss playsound node)</li>
 <li>Disabled colorspace conversion for mix rgb node's color mode</li>
 <li>Fix for map range clamping when output range min > max</li>
@@ -80,7 +85,7 @@ Hopefully in the future I'll look into integrating this with https://github.com/
 <li><span style="color:GoldenRod">Dynamic inputs 🔵</span></li>
 <li><span style="color:GoldenRod">Dynamic widgets 🔵</span></li>
 <li><span style="color:LightGreen">Merged input sockets and default values ("widgets") ✅</span></li>
-<li><span style="color:IndianRed">Merged output blender and image sockets ✅</span></li>
+<li><span style="color:LightGreen">Merged output blender and image sockets ✅</span></li>
 <li><span style="color:IndianRed">Low precision on image transforms, teethy edges ❌</span></li>
 <li><span style="color:IndianRed">Unplugging a disabled input visually enables it and its associated widgets, the input is supposed to still be disabled ❌</span></li>
 <li><span style="color:IndianRed">Soft min/max ❌</span></li>
@@ -177,7 +182,7 @@ Most other input nodes seem redundant or not applicable.
 <li><span style="color:LightGreen"> Brick Texture ✅</span></li>
 <li><span style="color:IndianRed"> Checker Texture ✅</span></li>
 <li><span style="color:IndianRed"> Gabor Texture ❌</span></li>
-<li><span style="color:IndianRed"> Gradient Texture ❌</span></li>
+<li><span style="color:IndianRed"> Gradient Texture ✅ (Bonus convenience: swap X/Y and centering)</span></li>
 <li><span style="color:IndianRed"> Magic Texture ❌</span></li>
 <li><span style="color:IndianRed"> Noise Texture 🔵 (fBM only, no distortion)</span></li>
 <li><span style="color:IndianRed"> Voronoi Texture 🔵 (F1, F2 & edge distance only, edge distance is approximate, 2D only)</span></li>

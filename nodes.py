@@ -1314,6 +1314,7 @@ class BlenderUV:
                 "Mode": (["Fit", "Shortest is 1", "Longest is 1"], ),
                 **FLOAT_INPUT("Width", 1024, 1, 2**14),
                 **FLOAT_INPUT("Height", 1024, 1, 2**14),
+                **COLOR_INPUT("Image Reference", hidden_default=True),
             }
         }
     
@@ -1327,11 +1328,16 @@ class BlenderUV:
     CATEGORY = "Blender/Input"
     
     def uv(self, **kwargs):
-        b_x = BlenderData(kwargs, "Width")
-        b_y = BlenderData(kwargs, "Height")
+        r = kwargs.get("Image Reference")
+        if r is None:
+            b_x = BlenderData(kwargs, "Width")
+            b_y = BlenderData(kwargs, "Height")
 
-        x = round(b_x.as_primitive_float())
-        y = round(b_y.as_primitive_float())
+            x = round(b_x.as_primitive_float())
+            y = round(b_y.as_primitive_float())
+        else:
+            b_r = BlenderData(kwargs, "Image Reference")
+            y, x = b_r.as_rgba().size()[1:3]
 
         mode = kwargs["Mode"]
         if mode == "Fit":
@@ -1709,3 +1715,84 @@ class BlenderVoronoiTexture:
         res_pos = BlenderData(res_pos)
 
         return (res_dist, res_col, res_pos)
+
+class BlenderGradientTexture:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "optional": {
+                **VECTOR_INPUT("Vector", hidden_default=True),
+                "Gradient Type": (["Linear", "Quadratic", "Easing", "Diagonal", "Spherical", "Quadratic Sphere", "Radial"], "tooltip": "Style of the color blending."),
+                "Swap X /Y": ("BOOLEAN", {"default": True, "tooltip": "Swap X and Y."} ), # For some reason, the frontend shows a weird space between the / and Y. 
+                # Having a space between X and / makes it look more normal.
+                "Center": ("BOOLEAN", {"default": False, "tooltip": "Shift the vector by -0.5, -0.5 to center spherical/radial coordinates."})
+            }
+        }
+    
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return BLEND_VALID_INPUTS(input_types, self.INPUT_TYPES())
+    
+    RETURN_TYPES = (*BLENDER_OUTPUT_COLOR(), *BLENDER_OUTPUT_FLOAT())
+    RETURN_NAMES = ("Color", "Factor")
+    FUNCTION = "gradient_texture"
+    CATEGORY = "Blender/Texture"
+    
+    def gradient_texture(self, **kwargs):
+        mode = kwargs["Gradient Type"]
+        doswap = kwargs["Swap X /Y"]
+        docenter = kwargs["Center"]
+        b_vector = BlenderData(kwargs, "Vector")
+        guess_canvas(b_vector)
+        vector = b_vector.as_vector(channels=3)
+
+        x, y, z = torch.split(vector, (1, 1, 1), dim=-1)
+        if doswap:
+            s = x
+            x = y
+            y = s
+        if docenter:
+            x = x - 0.5
+            y = y - 0.5
+
+        if mode == "Linear":
+            res = x
+
+        if mode == "Quadratic":
+            res = torch.pow(x, 2.0)
+
+        if mode == "Easing":
+            #   blender/blender/blob/main/source/blender/nodes/shader/nodes/node_shader_tex_gradient.cc
+            #   r = clamped x
+            #   const float t = r * r; fac[i] = (3.0f * t - 2.0f * t * r);
+            xclamped = torch.clamp(x, torch.zeros_like(x), torch.ones_like(x))
+            x2 = xclamped * xclamped
+            res = 3.0 * x2 - 2.0 * x2 * xclamped
+
+        if mode == "Diagonal":
+            if not doswap:
+                res = (x + y) / 2.0
+            else:
+                res = (x - y + 1.0) / 2.0
+
+        if mode == "Spherical":
+            res = 1.0 - torch.pow((x*x + y*y + z*z), 0.5)
+
+        if mode == "Quadratic Sphere":
+            res = 1.0 - torch.pow((x*x + y*y + z*z), 0.5)
+            res = torch.pow(res, 0.5)
+
+        if mode == "Radial":
+            res = torch.atan2(y, x)
+            res = res + PI
+            res = res / (PI * 2)
+        
+        res = torch.clamp(res, torch.zeros_like(res), torch.ones_like(res))
+
+        res_c = torch.cat((res, res, res, torch.ones_like(res)), dim=-1)
+        return (BlenderData(res_c), BlenderData(res), )
+    
+    DESCRIPTION = """Generate interpolated color and intensity values based on the input vector."""

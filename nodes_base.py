@@ -509,7 +509,7 @@ def ensure_samesize_channels(*blens: BlenderData, force=None):
 # (0.0, 0.999) --- (0.999, 0.999)
 #      |                  |
 # (0.0,   0.0) --- (0.999,   0.0)
-def make_uv(width, height, x_scale = 1.0, y_scale = 1.0, w1 = True, device="cpu"):
+def make_uv(width, height, x_scale = 1.0, y_scale = 1.0, w1 = False, device="cpu"):
     u_1d1c = torch.linspace(0.0, x_scale, width+1)[:-1]
     u_1d3c = torch.stack((u_1d1c, torch.zeros_like(u_1d1c), torch.zeros_like(u_1d1c)), dim=-1)
     u_2d = u_1d3c.repeat((height, 1, 1)).to(device)

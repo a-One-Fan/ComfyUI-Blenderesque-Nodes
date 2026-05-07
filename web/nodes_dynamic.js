@@ -12,7 +12,7 @@ import {
     COLOR_IMAGE_CONNECTED, COLOR_IMAGE_DISCONNECTED, COLOR_DISABLED,
     COLOR_OUTPUT_GENERIC_DISCONNECTED, COLOR_OUTPUT_GENERIC_CONNECTED,
 
-    BLENDER_OUTPUT_TYPE, BLENDER_COLOR_MAP,
+    BLENDER_OUTPUT_TYPE, BLENDER_COLOR_MAP, BLENDER_LABEL_COLOR_HINT,
 
     MATH_NAMEMAP, VECTOR_MATH_NAMEMAP,
 
@@ -194,6 +194,13 @@ function rearrange_inputs_and_widgets(node, preferred_order = []) {
                 }
             }
             ordered[i][0].label = desired_label;
+
+            const hinted_name = BLENDER_LABEL_COLOR_HINT[ordered[i][0].name];
+            if(hinted_name){
+                const colors = BLENDER_COLOR_MAP[hinted_name];
+                ordered[i][0].color_on = colors[0];
+                ordered[i][0].color_off = colors[1];
+            }
         } else {
             ordered[i][0].label = "   ";
             ordered[i][0].pos = [0, currentHeight + HEIGHT_INPUT];
